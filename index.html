@@ -330,6 +330,7 @@ async function loadChart(symbol) {
     }
 
     const rows = await response.json();
+    console.log("Candle API response:", rows);
 
     if (symbol !== currentSymbol) return;
 
