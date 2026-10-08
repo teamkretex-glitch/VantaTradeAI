@@ -368,7 +368,9 @@ async function loadChart(symbol) {
         "Chart error: " + error.message +
         ". Check your internet connection and reload.";
     }
-
+    
+    alert("Chart error: " + error.message);
+   
     console.error("Chart loading failed:", error);
   }
 }
