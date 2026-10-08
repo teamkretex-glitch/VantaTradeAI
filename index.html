@@ -371,7 +371,6 @@ async function loadChart(symbol) {
     console.error("Chart loading failed:", error);
   }
 }
-```
     document.getElementById("chartTabs").addEventListener("click",e=>{
       const btn=e.target.closest("[data-symbol]");
       if(btn) loadChart(btn.dataset.symbol);
