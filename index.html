@@ -261,53 +261,118 @@
       }).join("");
     }
 
-    function renderTable() {
-      const q = document.getElementById("search").value.toLowerCase();
-      const filtered = assets.filter(a => (a.name+a.short+a.symbol).toLowerCase().includes(q));
-      document.getElementById("marketTable").innerHTML = filtered.map(a=>{
-        const p=prices[a.symbol];
-        if(!p) return "";
-        return `<tr><td><strong>${a.name}</strong> <span class="muted">${a.short}</span></td>
-          <td>$${money(p.price)}</td><td class="${p.change>=0?"positive":"negative"}">${pct(p.change)}</td>
-          <td>$${(p.volume/1e6).toFixed(2)}M</td></tr>`;
-      }).join("") || '<tr><td colspan="4">No matching asset found.</td></tr>';
+    ```javascript
+async function loadChart(symbol) {
+  currentSymbol = symbol;
+
+  const title = document.getElementById("chartTitle");
+  const status = document.querySelector(".chart-note");
+
+  title.textContent = symbol.replace("USDT", "") + " / USDT";
+  if (status) status.textContent = "Loading " + symbol + " candles...";
+
+  document.querySelectorAll("#chartTabs .tab").forEach(button => {
+    button.classList.toggle("active", button.dataset.symbol === symbol);
+  });
+
+  try {
+    const el = document.getElementById("chart");
+
+    if (typeof LightweightCharts === "undefined") {
+      throw new Error("Chart library did not load");
     }
 
-    async function loadChart(symbol) {
-      currentSymbol = symbol;
-      document.getElementById("chartTitle").textContent = symbol.replace("USDT","") + " / USDT";
-      document.querySelectorAll("#chartTabs .tab").forEach(b=>b.classList.toggle("active",b.dataset.symbol===symbol));
-      if(!chart) {
-        const el = document.getElementById("chart");
-        chart = LightweightCharts.createChart(el,{
-          width:el.clientWidth,height:330,
-          layout:{background:{color:"#101522"},textColor:"#8e9bb5"},
-          grid:{vertLines:{color:"#1b2436"},horzLines:{color:"#1b2436"}},
-          rightPriceScale:{borderColor:"#283149"},
-          timeScale:{borderColor:"#283149",timeVisible:true}
-        });
-        candleSeries = chart.addCandlestickSeries({
-          upColor:"#35d6a0",downColor:"#ff6b83",
-          borderUpColor:"#35d6a0",borderDownColor:"#ff6b83",
-          wickUpColor:"#35d6a0",wickDownColor:"#ff6b83"
-        });
-        window.addEventListener("resize",()=>chart.applyOptions({width:el.clientWidth}));
-      }
-      candleSeries.setData([]);
-      try {
-        const res=await fetch(`https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=1h&limit=100`);
-        if(!res.ok) throw new Error("Chart unavailable");
-        const rows=await res.json();
-        if(symbol!==currentSymbol) return;
-        candleSeries.setData(rows.map(r=>({
-          time:Math.floor(r[0]/1000),open:+r[1],high:+r[2],low:+r[3],close:+r[4]
-        })));
-        chart.timeScale().fitContent();
-      } catch(e) {
-        document.getElementById("chartTitle").textContent = symbol.replace("USDT","") + " / USDT · Chart unavailable";
-      }
+    if (!chart) {
+      chart = LightweightCharts.createChart(el, {
+        width: el.clientWidth,
+        height: 330,
+        layout: {
+          background: { color: "#101522" },
+          textColor: "#8e9bb5"
+        },
+        grid: {
+          vertLines: { color: "#1b2436" },
+          horzLines: { color: "#1b2436" }
+        },
+        rightPriceScale: { borderColor: "#283149" },
+        timeScale: {
+          borderColor: "#283149",
+          timeVisible: true
+        }
+      });
+
+      candleSeries = chart.addCandlestickSeries({
+        upColor: "#35d6a0",
+        downColor: "#ff6b83",
+        borderUpColor: "#35d6a0",
+        borderDownColor: "#ff6b83",
+        wickUpColor: "#35d6a0",
+        wickDownColor: "#ff6b83"
+      });
+
+      window.addEventListener("resize", () => {
+        if (chart) {
+          chart.applyOptions({ width: el.clientWidth });
+        }
+      });
     }
 
+    candleSeries.setData([]);
+
+    const url =
+      "https://api.binance.com/api/v3/klines" +
+      "?symbol=" + encodeURIComponent(symbol) +
+      "&interval=1h&limit=100&_=" + Date.now();
+
+    const response = await fetch(url, { cache: "no-store" });
+
+    if (!response.ok) {
+      throw new Error("Binance API HTTP " + response.status);
+    }
+
+    const rows = await response.json();
+
+    if (symbol !== currentSymbol) return;
+
+    if (!Array.isArray(rows) || rows.length === 0) {
+      throw new Error("No candle data returned");
+    }
+
+    const candles = rows.map(row => ({
+      time: Math.floor(row[0] / 1000),
+      open: Number(row[1]),
+      high: Number(row[2]),
+      low: Number(row[3]),
+      close: Number(row[4])
+    }));
+
+    candleSeries.setData(candles);
+    chart.timeScale().fitContent();
+
+    if (status) {
+      status.textContent =
+        symbol.replace("USDT", "") +
+        "/USDT · " + candles.length +
+        " hourly candles loaded · Latest close: $" +
+        money(candles[candles.length - 1].close);
+    }
+
+  } catch (error) {
+    if (symbol !== currentSymbol) return;
+
+    title.textContent =
+      symbol.replace("USDT", "") + " / USDT · Chart unavailable";
+
+    if (status) {
+      status.textContent =
+        "Chart error: " + error.message +
+        ". Check your internet connection and reload.";
+    }
+
+    console.error("Chart loading failed:", error);
+  }
+}
+```
     document.getElementById("chartTabs").addEventListener("click",e=>{
       const btn=e.target.closest("[data-symbol]");
       if(btn) loadChart(btn.dataset.symbol);
