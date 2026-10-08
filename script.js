@@ -238,8 +238,20 @@ async function loadChart(symbol) {
       index === 0 || candle.time > array[index - 1].time
     );
 
-    candleSeries.setData(uniqueCandles);
-    chart.timeScale().fitContent();
+    
+candleSeries.setData(uniqueCandles);
+
+candleSeries.priceScale().applyOptions({
+  autoScale: true
+});
+
+chart.timeScale().applyOptions({
+  rightOffset: 5,
+  barSpacing: 8
+});
+
+chart.timeScale().fitContent();
+
 
     if (status) {
       status.dataset.chartError = "";
