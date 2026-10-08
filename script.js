@@ -198,7 +198,7 @@ async function loadChart(symbol) {
     const url =
       "https://api.binance.com/api/v3/klines" +
       "?symbol=" + encodeURIComponent(symbol) +
-      "&interval=1h&limit=100&_=" + Date.now();
+      "&interval=1h&limit=100";
 
     const response = await fetch(url, { cache: "no-store" });
 
