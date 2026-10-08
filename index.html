@@ -1,411 +1,134 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#080b14">
-  <meta name="description" content="VantaTrade AI — crypto market intelligence, live prices, technical analysis and paper trading tools.">
-  <title>VantaTrade AI | Crypto Intelligence</title>
+  <meta name="theme-color" content="#10120f">
+  <meta name="description" content="VantaTradeAI — Crypto market data, candlestick charts and market analysis in one professional workspace.">
+  <title>VantaTradeAI | Market Terminal</title>
+  <link rel="stylesheet" href="style.css">
   <script src="https://unpkg.com/lightweight-charts@4.2.2/dist/lightweight-charts.standalone.production.js"></script>
-  <style>
-    :root {
-      --bg:#080b14; --panel:#101522; --panel2:#141b2b;
-      --border:#242c40; --text:#edf2ff; --muted:#8e9bb5;
-      --blue:#6d8cff; --cyan:#52e5ff; --green:#35d6a0;
-      --red:#ff6b83; --purple:#a18bff;
-    }
-    * { box-sizing:border-box; }
-    body {
-      margin:0; background:radial-gradient(ellipse at 50% -20%,#1a2450 0,transparent 55%),var(--bg);
-      color:var(--text); font-family:Inter,system-ui,-apple-system,Arial,sans-serif;
-    }
-    button,input { font:inherit; }
-    button { cursor:pointer; }
-    a { color:inherit; text-decoration:none; }
-    .wrap { max-width:1440px; margin:auto; padding:0 24px; }
-    header {
-      display:flex; align-items:center; justify-content:space-between; gap:18px;
-      padding:20px 0; border-bottom:1px solid var(--border);
-    }
-    .brand { display:flex; align-items:center; gap:10px; font-size:21px; font-weight:850; letter-spacing:-.7px; }
-    .logo {
-      width:39px; height:39px; border-radius:12px; display:grid; place-items:center;
-      background:linear-gradient(135deg,var(--blue),var(--cyan)); color:#07101b; font-weight:950;
-    }
-    .brand span { color:var(--cyan); }
-    nav { display:flex; gap:22px; color:var(--muted); font-size:13px; }
-    nav a:hover { color:white; }
-    .status { color:var(--green); font-size:12px; white-space:nowrap; }
-    .hero { padding:40px 0 24px; display:flex; align-items:center; justify-content:space-between; gap:25px; }
-    .eyebrow { color:var(--cyan); font-size:11px; letter-spacing:2px; font-weight:800; text-transform:uppercase; }
-    h1 { font-size:clamp(32px,5vw,55px); line-height:1.06; letter-spacing:-2px; margin:13px 0; }
-    h1 em { font-style:normal; color:var(--cyan); }
-    .sub { color:var(--muted); max-width:650px; line-height:1.7; font-size:14px; }
-    .button {
-      border:1px solid var(--border); background:var(--panel2); color:white;
-      border-radius:10px; padding:11px 15px; font-weight:700; font-size:13px;
-    }
-    .primary { background:linear-gradient(110deg,#6d8cff,#58dfff); color:#07101b; border:0; }
-    .hero-actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:20px; }
-    .disclaimer { color:#c8a76a; font-size:11px; margin-top:12px; }
-    .section-title { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:24px 0 14px; }
-    h2 { font-size:18px; margin:0; }
-    .muted { color:var(--muted); font-size:12px; }
-    .grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:13px; }
-    .panel,.coin {
-      border:1px solid var(--border); background:linear-gradient(145deg,#121827,#0e1320);
-      border-radius:15px; padding:17px; min-width:0;
-    }
-    .coin-head { display:flex; justify-content:space-between; align-items:center; gap:8px; }
-    .coin-name { font-size:13px; font-weight:750; }
-    .symbol { color:var(--muted); font-size:11px; margin-top:4px; }
-    .coin-price { font-size:23px; font-weight:800; margin:17px 0 8px; letter-spacing:-.7px; overflow-wrap:anywhere; }
-    .positive { color:var(--green); } .negative { color:var(--red); }
-    .coin-foot { display:flex; justify-content:space-between; gap:5px; font-size:11px; color:var(--muted); }
-    .coin-icon { width:30px; height:30px; display:grid; place-items:center; border-radius:10px; background:#202b45; font-weight:900; }
-    .layout { display:grid; grid-template-columns:minmax(0,1.7fr) minmax(270px,1fr); gap:14px; }
-    .tabs { display:flex; gap:8px; flex-wrap:wrap; }
-    .tab { border:1px solid var(--border); color:var(--muted); background:transparent; border-radius:8px; padding:7px 11px; font-size:12px; }
-    .tab.active { background:#253354; color:white; border-color:#536ca8; }
-    #chart { height:330px; margin-top:15px; }
-    .chart-note { margin-top:10px; font-size:11px; color:var(--muted); }
-    .signal { border:1px solid #294b51; background:linear-gradient(145deg,#10232b,#111827); }
-    .signal-label { font-size:11px; color:var(--muted); }
-    .signal-main { display:flex; align-items:center; justify-content:space-between; margin:14px 0; gap:10px; }
-    .wait { color:#f1d08a; background:#3b3020; border-radius:8px; padding:7px 12px; font-size:12px; font-weight:850; }
-    .signal-stats { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:18px; }
-    .stat { background:#0b111d; border:1px solid var(--border); padding:12px; border-radius:10px; }
-    .stat strong { display:block; margin-top:6px; font-size:14px; }
-    .search { width:100%; border:1px solid var(--border); background:#0a0f1b; color:white; padding:11px 12px; border-radius:9px; outline:none; }
-    .search:focus { border-color:var(--blue); }
-    .table-wrap { overflow-x:auto; }
-    table { width:100%; border-collapse:collapse; min-width:520px; }
-    th,td { text-align:left; padding:14px 12px; border-bottom:1px solid var(--border); font-size:12px; }
-    th { color:var(--muted); font-weight:600; }
-    .trade-controls { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px; }
-    label { display:block; font-size:11px; color:var(--muted); margin-bottom:7px; }
-    select,.field { width:100%; padding:10px; color:white; background:#0b111d; border:1px solid var(--border); border-radius:8px; }
-    .trade-result { margin-top:12px; color:var(--muted); font-size:12px; line-height:1.6; }
-    .footer { margin:32px 0 22px; border-top:1px solid var(--border); padding-top:20px; color:var(--muted); font-size:11px; line-height:1.8; }
-    .full { grid-column:1/-1; }
-    @media(max-width:950px) {
-      .grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
-      .layout { grid-template-columns:1fr; }
-      nav { display:none; }
-    }
-    @media(max-width:500px) {
-      .wrap { padding:0 13px; }
-      header { padding:14px 0; }
-      .brand { font-size:18px; }
-      .hero { padding-top:28px; }
-      .grid { gap:9px; }
-      .coin,.panel { padding:13px; }
-      .coin-price { font-size:19px; }
-      #chart { height:270px; }
-      .status { font-size:10px; }
-    }
-  </style>
+  <script src="script.js" defer></script>
 </head>
 <body>
-  <div class="wrap">
-    <header>
-      <a class="brand" href="#"><div class="logo">V</div> VantaTrade <span>AI</span></a>
-      <nav>
-        <a href="#markets">Markets</a><a href="#analysis">AI Analyst</a>
-        <a href="#tools">Trading Tools</a><a href="#paper">Paper Trading</a>
-      </nav>
-      <div class="status">● <span id="connection">Connecting market data…</span></div>
-    </header>
-
-    <section class="hero">
-      <div>
-        <div class="eyebrow">Market intelligence platform</div>
-        <h1>Trade smarter.<br><em>See the market clearly.</em></h1>
-        <p class="sub">A crypto market workspace for live prices, technical charts, market research and risk-aware paper trading.</p>
-        <div class="hero-actions">
-          <a class="button primary" href="#markets">Explore Markets ↘</a>
-          <a class="button" href="#paper">Try Paper Trading</a>
-        </div>
-        <div class="disclaimer">Crypto is high risk. No guaranteed profits or guaranteed win rates.</div>
-      </div>
-    </section>
-
-    <section id="markets">
-      <div class="section-title"><h2>Market Overview</h2><span class="muted" id="updated">Loading prices…</span></div>
-      <div class="grid" id="coinCards">
-        <div class="coin">Loading live market data…</div>
-      </div>
-    </section>
-
-    <section class="layout" style="margin-top:18px" id="analysis">
-      <div class="panel">
-        <div class="section-title" style="margin-top:0">
-          <div><h2>Price Chart</h2><div class="muted" id="chartTitle" style="margin-top:6px">BTC / USDT</div></div>
-          <div class="tabs" id="chartTabs">
-            <button class="tab active" data-symbol="BTCUSDT">BTC</button>
-            <button class="tab" data-symbol="ETHUSDT">ETH</button>
-            <button class="tab" data-symbol="SOLUSDT">SOL</button>
-          </div>
-        </div>
-        <div id="chart"></div>
-        <div class="chart-note">Candlestick data from Binance public market API. Chart updates when you select a coin.</div>
-      </div>
-
-      <div class="panel signal">
-        <div class="eyebrow">AI Analyst Workspace</div>
-        <h2 style="margin-top:10px">Market Signal</h2>
-        <div class="muted" style="margin-top:6px">BTC / USDT · Demo interface</div>
-        <div class="signal-main">
-          <div><div class="signal-label">Current status</div><div style="margin-top:8px;font-size:19px;font-weight:850">WAIT</div></div>
-          <span class="wait">DEMO ONLY</span>
-        </div>
-        <p class="muted" style="line-height:1.7">No verified trading signal is generated yet. This placeholder is not a recommendation to buy or sell.</p>
-        <div class="signal-stats">
-          <div class="stat"><div class="signal-label">Entry zone</div><strong>Not calculated</strong></div>
-          <div class="stat"><div class="signal-label">Stop loss</div><strong>Not calculated</strong></div>
-          <div class="stat"><div class="signal-label">Target</div><strong>Not calculated</strong></div>
-          <div class="stat"><div class="signal-label">Risk / Reward</div><strong>Not calculated</strong></div>
-        </div>
-        <div class="trade-result">Next: connect validated indicators, backtesting and a real signal engine.</div>
-      </div>
-    </section>
-
-    <section id="tools">
-      <div class="section-title"><h2>Market Watchlist</h2><span class="muted">Search supported pairs</span></div>
-      <div class="panel">
-        <input class="search" id="search" placeholder="Search BTC, ETH, SOL…" aria-label="Search crypto market">
-        <div class="table-wrap" style="margin-top:10px">
-          <table>
-            <thead><tr><th>Asset</th><th>Price (USDT)</th><th>24h Change</th><th>24h Volume</th></tr></thead>
-            <tbody id="marketTable"><tr><td colspan="4">Loading live prices…</td></tr></tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <section id="paper">
-      <div class="section-title"><h2>Paper Trading Simulator</h2><span class="muted">No real orders</span></div>
-      <div class="panel">
-        <p class="muted">Practice a hypothetical trade using live prices. This tool does not connect to an exchange account and does not place orders.</p>
-        <div class="trade-controls">
-          <div><label for="asset">Crypto</label>
-            <select id="asset"><option value="BTCUSDT">BTC / USDT</option><option value="ETHUSDT">ETH / USDT</option><option value="SOLUSDT">SOL / USDT</option></select>
-          </div>
-          <div><label for="side">Practice direction</label>
-            <select id="side"><option value="BUY">BUY / Long</option><option value="SELL">SELL / Short</option></select>
-          </div>
-          <div><label for="amount">Position size (USDT)</label><input class="field" id="amount" type="number" min="1" max="100000" value="100"></div>
-          <div><label for="stop">Stop-loss distance (%)</label><input class="field" id="stop" type="number" min="0.1" max="50" step="0.1" value="2"></div>
-        </div>
-        <div class="hero-actions">
-          <button class="button primary" id="simulate">Calculate Practice Trade</button>
-        </div>
-        <div id="tradeResult" class="trade-result">Choose your settings and calculate a hypothetical trade.</div>
-      </div>
-    </section>
-
-    <div class="footer">
-      <strong style="color:var(--text)">VantaTrade AI</strong> · Independent market research workspace.<br>
-      Prices are informational and may be delayed or unavailable. Demo signals are not financial advice.
-      Paper-trading calculations ignore fees, slippage and execution differences. Cryptocurrency trading can cause substantial losses.
+  <header class="topbar">
+    <a class="brand" href="#">
+      <span class="brand-mark">V</span>
+      <span>VANTA<span class="brand-light">TRADE</span></span>
+    </a>
+    <div class="market-status">
+      <span class="status-dot"></span>
+      <span>MARKET DATA</span>
     </div>
+    <button class="menu-button" id="menuButton" aria-label="Toggle navigation">☰</button>
+  </header>
+
+  <div class="app-layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="side-label">WORKSPACE</div>
+      <a class="nav-link active" href="#overview"><span>▦</span> Overview</a>
+      <a class="nav-link" href="#market"><span>↗</span> Markets</a>
+      <a class="nav-link" href="#chart-section"><span>▥</span> Chart terminal</a>
+      <a class="nav-link" href="#analyst"><span>✳</span> AI analyst</a>
+
+      <div class="sidebar-bottom">
+        <div class="side-label">PLATFORM</div>
+        <div class="sidebar-note">Market intelligence<br><strong>Version 1.0</strong></div>
+        <div class="sidebar-foot">BUILT FOR BETTER DECISIONS</div>
+      </div>
+    </aside>
+
+    <main class="main-content" id="overview">
+      <section class="welcome-row">
+        <div>
+          <div class="eyebrow">DIGITAL ASSET INTELLIGENCE</div>
+          <h1>Market <span>Overview</span></h1>
+          <p class="subheading">A clearer view of the digital asset market.</p>
+        </div>
+        <div class="date-chip"><span class="status-dot"></span> PUBLIC MARKET DATA</div>
+      </section>
+
+      <section class="metric-grid" id="market">
+        <article class="metric-card">
+          <div class="metric-label">BITCOIN <span>BTC</span></div>
+          <div class="metric-value" id="btcPrice">—</div>
+          <div class="metric-foot" id="btcChange">Waiting for market data</div>
+        </article>
+        <article class="metric-card">
+          <div class="metric-label">ETHEREUM <span>ETH</span></div>
+          <div class="metric-value" id="ethPrice">—</div>
+          <div class="metric-foot" id="ethChange">Waiting for market data</div>
+        </article>
+        <article class="metric-card">
+          <div class="metric-label">SOLANA <span>SOL</span></div>
+          <div class="metric-value" id="solPrice">—</div>
+          <div class="metric-foot" id="solChange">Waiting for market data</div>
+        </article>
+        <article class="metric-card metric-card-accent">
+          <div class="metric-label">DATA SOURCE <span>API</span></div>
+          <div class="metric-value source-value">BINANCE</div>
+          <div class="metric-foot">Public exchange market feed</div>
+        </article>
+      </section>
+
+      <section class="panel chart-panel" id="chart-section">
+        <div class="panel-heading">
+          <div>
+            <div class="eyebrow">PRICE ACTION</div>
+            <h2 id="chartTitle">BTC / USDT</h2>
+          </div>
+          <div class="timeframe-chip">1H <span>▾</span></div>
+        </div>
+
+        <div class="coin-tabs" id="chartTabs">
+          <button class="tab active" data-symbol="BTCUSDT">BTC <span>₿</span></button>
+          <button class="tab" data-symbol="ETHUSDT">ETH <span>Ξ</span></button>
+          <button class="tab" data-symbol="SOLUSDT">SOL <span>◎</span></button>
+        </div>
+
+        <div class="chart-status" id="chartStatus">Connecting to public market data…</div>
+        <div id="chart" class="chart-area" aria-label="Candlestick price chart"></div>
+        <div class="chart-legend"><span class="legend-green"></span> Bullish <span class="legend-red"></span> Bearish <span class="legend-source">SOURCE: BINANCE PUBLIC API</span></div>
+      </section>
+
+      <section class="lower-grid">
+        <article class="panel watchlist-panel">
+          <div class="panel-heading">
+            <div>
+              <div class="eyebrow">LIVE FEED</div>
+              <h2>Market Watch</h2>
+            </div>
+            <span class="panel-tag">SPOT</span>
+          </div>
+          <div class="watch-row watch-head"><span>ASSET</span><span>LAST PRICE</span><span>24H</span></div>
+          <div class="watch-row" id="watchBTC"><span class="asset-name"><b class="asset-icon">₿</b><span>Bitcoin<small>BTC / USDT</small></span></span><strong id="watchBtcPrice">—</strong><span id="watchBtcChange">—</span></div>
+          <div class="watch-row" id="watchETH"><span class="asset-name"><b class="asset-icon">Ξ</b><span>Ethereum<small>ETH / USDT</small></span></span><strong id="watchEthPrice">—</strong><span id="watchEthChange">—</span></div>
+          <div class="watch-row" id="watchSOL"><span class="asset-name"><b class="asset-icon">◎</b><span>Solana<small>SOL / USDT</small></span></span><strong id="watchSolPrice">—</strong><span id="watchSolChange">—</span></div>
+          <p class="panel-footnote">Prices may be delayed or unavailable if the data provider is unreachable.</p>
+        </article>
+
+        <article class="panel analyst-panel" id="analyst">
+          <div class="panel-heading">
+            <div>
+              <div class="eyebrow">RESEARCH DESK</div>
+              <h2>AI Analyst Workspace</h2>
+            </div>
+            <span class="analyst-symbol">✳</span>
+          </div>
+          <div class="analyst-placeholder">
+            <div class="analyst-orbit">V</div>
+            <h3>Market Signal</h3>
+            <p>This workspace is ready for market analysis tools. Automated recommendations are not active yet.</p>
+            <div class="analyst-disclaimer">NO GUARANTEED RETURNS · NOT FINANCIAL ADVICE</div>
+          </div>
+        </article>
+      </section>
+
+      <footer class="page-footer">
+        <span>VANTATRADEAI <span class="footer-separator">/</span> MARKET TERMINAL</span>
+        <span>Independent market research interface</span>
+      </footer>
+    </main>
   </div>
-
-  <script>
-    const assets = [
-      {symbol:"BTCUSDT",name:"Bitcoin",short:"BTC",icon:"₿"},
-      {symbol:"ETHUSDT",name:"Ethereum",short:"ETH",icon:"◆"},
-      {symbol:"SOLUSDT",name:"Solana",short:"SOL",icon:"◎"},
-      {symbol:"BNBUSDT",name:"BNB",short:"BNB",icon:"B"}
-    ];
-    const prices = {};
-    const money = n => Number(n).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
-    const pct = n => `${Number(n)>=0?"+":""}${Number(n).toFixed(2)}%`;
-    let chart, candleSeries, currentSymbol = "BTCUSDT";
-
-    async function fetchTickers() {
-      try {
-        const symbols = encodeURIComponent(JSON.stringify(assets.map(a=>a.symbol)));
-        const res = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbols=${symbols}`);
-        if(!res.ok) throw new Error("Market API unavailable");
-        const data = await res.json();
-        data.forEach(d => prices[d.symbol] = {
-          price:Number(d.lastPrice), change:Number(d.priceChangePercent),
-          volume:Number(d.quoteVolume)
-        });
-        renderCards(); renderTable();
-        document.getElementById("connection").textContent = "Live market data";
-        document.getElementById("updated").textContent = "Updated " + new Date().toLocaleTimeString();
-      } catch(e) {
-        document.getElementById("connection").textContent = "Market data unavailable";
-        document.getElementById("updated").textContent = "Could not fetch prices";
-        document.getElementById("coinCards").innerHTML =
-          '<div class="coin full">Live data could not be loaded. Refresh later or check whether the market API is accessible in your region.</div>';
-        document.getElementById("marketTable").innerHTML =
-          '<tr><td colspan="4">Live prices unavailable. No fake prices are displayed.</td></tr>';
-      }
-    }
-
-    function renderCards() {
-      document.getElementById("coinCards").innerHTML = assets.map(a => {
-        const p = prices[a.symbol];
-        if(!p) return "";
-        return `<div class="coin">
-          <div class="coin-head"><div style="display:flex;gap:9px;align-items:center">
-          <div class="coin-icon">${a.icon}</div><div><div class="coin-name">${a.name}</div><div class="symbol">${a.short}/USDT</div></div></div>
-          <span class="${p.change>=0?"positive":"negative"}">${pct(p.change)}</span></div>
-          <div class="coin-price">$${money(p.price)}</div>
-          <div class="coin-foot"><span>24h volume</span><span>$${(p.volume/1e6).toFixed(1)}M</span></div>
-        </div>`;
-      }).join("");
-    }
-
-async function loadChart(symbol) {
-  currentSymbol = symbol;
-
-  const title = document.getElementById("chartTitle");
-  const status = document.querySelector(".chart-note");
-
-  title.textContent = symbol.replace("USDT", "") + " / USDT";
-  if (status) status.textContent = "Loading " + symbol + " candles...";
-
-  document.querySelectorAll("#chartTabs .tab").forEach(button => {
-    button.classList.toggle("active", button.dataset.symbol === symbol);
-  });
-
-  try {
-    const el = document.getElementById("chart");
-
-    if (typeof LightweightCharts === "undefined") {
-      throw new Error("Chart library did not load");
-    }
-
-    if (!chart) {
-      chart = LightweightCharts.createChart(el, {
-        width: el.clientWidth,
-        height: 330,
-        layout: {
-          background: { color: "#101522" },
-          textColor: "#8e9bb5"
-        },
-        grid: {
-          vertLines: { color: "#1b2436" },
-          horzLines: { color: "#1b2436" }
-        },
-        rightPriceScale: { borderColor: "#283149" },
-        timeScale: {
-          borderColor: "#283149",
-          timeVisible: true
-        }
-      });
-
-      candleSeries = chart.addCandlestickSeries({
-        upColor: "#35d6a0",
-        downColor: "#ff6b83",
-        borderUpColor: "#35d6a0",
-        borderDownColor: "#ff6b83",
-        wickUpColor: "#35d6a0",
-        wickDownColor: "#ff6b83"
-      });
-
-      window.addEventListener("resize", () => {
-        if (chart) {
-          chart.applyOptions({ width: el.clientWidth });
-        }
-      });
-    }
-
-    candleSeries.setData([]);
-
-    const url =
-      "https://api.binance.com/api/v3/klines" +
-      "?symbol=" + encodeURIComponent(symbol) +
-      "&interval=1h&limit=100&_=" + Date.now();
-
-    const response = await fetch(url, { cache: "no-store" });
-
-    if (!response.ok) {
-      throw new Error("Binance API HTTP " + response.status);
-    }
-
-    const rows = await response.json();
-    console.log("Candle API response:", rows);
-
-    if (symbol !== currentSymbol) return;
-
-    if (!Array.isArray(rows) || rows.length === 0) {
-      throw new Error("No candle data returned");
-    }
-
-    const candles = rows.map(row => ({
-      time: Math.floor(row[0] / 1000),
-      open: Number(row[1]),
-      high: Number(row[2]),
-      low: Number(row[3]),
-      close: Number(row[4])
-    }));
-
-    candleSeries.setData(candles);
-    chart.timeScale().fitContent();
-
-    if (status) {
-      status.textContent =
-        symbol.replace("USDT", "") +
-        "/USDT · " + candles.length +
-        " hourly candles loaded · Latest close: $" +
-        money(candles[candles.length - 1].close);
-    }
-
-  } catch (error) {
-    if (symbol !== currentSymbol) return;
-
-    title.textContent =
-      symbol.replace("USDT", "") + " / USDT · Chart unavailable";
-
-    if (status) {
-      status.textContent =
-        "Chart error: " + error.message +
-        ". Check your internet connection and reload.";
-    }
-    
-    alert("Chart error: " + error.message);
-   
-    console.error("Chart loading failed:", error);
-  }
-}
-    document.getElementById("chartTabs").addEventListener("click",e=>{
-      const btn=e.target.closest("[data-symbol]");
-      if(btn) loadChart(btn.dataset.symbol);
-    });
-    document.getElementById("search").addEventListener("input",renderTable);
-
-    document.getElementById("simulate").addEventListener("click",()=>{
-      const symbol=document.getElementById("asset").value;
-      const side=document.getElementById("side").value;
-      const amount=Number(document.getElementById("amount").value);
-      const stop=Number(document.getElementById("stop").value);
-      const p=prices[symbol];
-      const out=document.getElementById("tradeResult");
-      if(!p || !Number.isFinite(amount) || amount<1 || amount>100000 ||
-         !Number.isFinite(stop) || stop<0.1 || stop>50) {
-        out.textContent="Enter a valid position size (1–100,000 USDT) and stop distance (0.1–50%). Make sure live price data is available.";
-        return;
-      }
-      const qty=amount/p.price;
-      const risk=amount*stop/100;
-      out.innerHTML=`<strong style="color:var(--text)">Hypothetical ${side} · ${symbol.replace("USDT","")}</strong><br>
-        Reference price: $${money(p.price)}<br>
-        Position value: $${money(amount)}<br>
-        Approximate quantity: ${qty.toFixed(6)} ${symbol.replace("USDT","")}<br>
-        Stop distance: ${stop.toFixed(2)}%<br>
-        <span class="negative">Estimated loss at stop: $${money(risk)}</span><br>
-        <span class="muted">Illustrative estimate only; excludes fees, slippage and funding. No real order was placed.</span>`;
-    });
-
-    fetchTickers();
-    loadChart("BTCUSDT");
-    setInterval(fetchTickers,30000);
-  </script>
 </body>
-  </html>
+</html>
