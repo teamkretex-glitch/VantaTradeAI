@@ -310,10 +310,9 @@ const title = $("chartTitle");
         Number.isFinite(c.close)
       )
       .sort((a, b) => a.time - b.time)
-      .filter((c, i, arr) =>
-        i === 0 || c.time !== arr[i - 1].time
-      );
+      .filter((c, i, arr) => i === 0 || c.time !== arr[i - 1].time);
 
+    console.log("Delta candles loaded:", candles.length, candles.slice(-3));
     candleSeries.setData(candles);
     chart.timeScale().fitContent();
 
