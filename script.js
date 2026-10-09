@@ -421,20 +421,14 @@ async function loadChart(symbol) {
     }
 
     candleSeries.setData(candles);
-    alert(
-      "Candles: " + candles.length +
-      "\nFirst: " + JSON.stringify(candles[0]) +
-      "\nLast: " + JSON.stringify(candles[candles.length - 1]) +
-      "\nPrice range: " +
-      Math.min(...candles.map(c => c.low)) + " - " +
-      Math.max(...candles.map(c => c.high))
-    );
-    console.log("Chart candle count:", candles.length);
-    console.log("First candle:", candles[0]);
-    console.log("Last candle:", candles[candles.length - 1]);
-    console.log("Price range:", Math.min(...candles.map(c => c.low)), Math.max(...candles.map(c => c.high)));
-    
-    
+    candleSeries.priceScale().applyOptions({
+      autoScale: true,
+      scaleMargins: {
+        top: 0.05,
+        bottom: 0.05
+      }
+    });
+   
     // Fit history once when a symbol is selected.
     // Do not call fitContent for every live update, because that
     // would repeatedly reset the user's zoom.
