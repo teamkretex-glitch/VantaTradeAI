@@ -115,77 +115,117 @@ function connectLivePrices() {
 async function fetchMarkets() {
   try {
     const response = await fetch(
-      "https://api.binance.com/api/v3/ticker/24hr",
+      "https://api.india.delta.exchange/v2/tickers",
       { cache: "no-store" }
     );
 
     if (!response.ok) {
-      throw new Error("Market API HTTP " + response.status);
+      throw new Error("Delta API HTTP " + response.status);
     }
 
-    const rows = await response.json();
-    const markets = {};
+    const result = await response.json();
 
-    for (const symbol of ["BTCUSDT", "ETHUSDT", "SOLUSDT"]) {
-      const row = rows.find((item) => item.symbol === symbol);
-      if (row) markets[symbol] = row;
+    if (!result.success || !Array.isArray(result.result)) {
+      throw new Error("Invalid Delta ticker response");
     }
+
+    const rows = result.result;
 
     const config = [
       {
-        symbol: "BTCUSDT",
+        symbol: "BTCUSD",
         price: "btcPrice",
         change: "btcChange",
         watchPrice: "watchBtcPrice",
         watchChange: "watchBtcChange"
       },
       {
-        symbol: "ETHUSDT",
+        symbol: "ETHUSD",
         price: "ethPrice",
         change: "ethChange",
         watchPrice: "watchEthPrice",
         watchChange: "watchEthChange"
       },
       {
-        symbol: "SOLUSDT",
+        symbol: "SOLUSD",
         price: "solPrice",
         change: "solChange",
         watchPrice: "watchSolPrice",
         watchChange: "watchSolChange"
+      },
+      {
+        symbol: "XAUTUSD",
+        price: "xautPrice",
+        change: "xautChange",
+        watchPrice: "watchXautPrice",
+        watchChange: "watchXautChange"
       }
     ];
 
     for (const item of config) {
-      const market = markets[item.symbol];
-      if (!market) continue;
+      const market = rows.find(
+        (row) => row.symbol === item.symbol
+      );
 
-      const price = Number(market.lastPrice);
-      const change = Number(market.priceChangePercent);
+      if (!market) {
+        console.warn("Delta symbol unavailable:", item.symbol);
+        continue;
+      }
 
-      if ($(item.price)) $(item.price).textContent = formatPrice(price);
+      const price = Number(
+        market.mark_price ?? market.close
+      );
+
+      const change = Number(market.change_24h);
+
+      if (!Number.isFinite(price)) {
+        console.warn("Invalid price:", item.symbol, market);
+        continue;
+      }
+
+      if ($(item.price)) {
+        $(item.price).textContent = formatPrice(price);
+      }
+
       if ($(item.watchPrice)) {
         $(item.watchPrice).textContent = formatPrice(price);
       }
 
-      if ($(item.change)) {
-        $(item.change).textContent = formatPercent(change) + " · 24H";
-        $(item.change).classList.toggle("positive", change > 0);
-        $(item.change).classList.toggle("negative", change < 0);
+      if (Number.isFinite(change)) {
+        if ($(item.change)) {
+          $(item.change).textContent =
+            formatPercent(change) + " · 24H";
+
+          $(item.change).classList.toggle(
+            "positive",
+            change > 0
+          );
+
+          $(item.change).classList.toggle(
+            "negative",
+            change < 0
+          );
+        }
+
+        setChange(item.watchChange, change);
       }
-
-      setChange(item.watchChange, change);
     }
 
     const status = $("chartStatus");
+
     if (status && !status.dataset.chartError) {
-      status.textContent = "Public market feed connected · Prices refresh every 30 seconds";
+      status.textContent =
+        "Delta Exchange India connected · Refreshing every 30 seconds";
     }
+
   } catch (error) {
-    console.error("Market prices failed:", error);
+    console.error("Delta market prices failed:", error);
 
     const status = $("chartStatus");
+
     if (status && !status.dataset.chartError) {
-      status.textContent = "Market feed unavailable. Reload or try again later.";
+      status.textContent =
+        "Delta market feed unavailable · Retry later";
     }
   }
 }
