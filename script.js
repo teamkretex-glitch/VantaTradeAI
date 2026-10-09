@@ -425,7 +425,6 @@ async function loadChart(symbol) {
     console.log("First candle:", candles[0]);
     console.log("Last candle:", candles[candles.length - 1]);
     console.log("Price range:", Math.min(...candles.map(c => c.low)), Math.max(...candles.map(c => c.high)));
-
     alert(
       "Candles: " + candles.length +
       "\nFirst: " + JSON.stringify(candles[0]) +
