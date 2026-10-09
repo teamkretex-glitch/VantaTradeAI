@@ -750,3 +750,71 @@ h2 {
     padding: 9px;
   }
 }
+
+/* ===== Fixes ===== */
+
+/* Chart ko poori height/width do */
+.chart-area {
+  position: relative;
+  height: 400px;
+}
+
+#chart {
+  width: 100%;
+  height: 100%;
+}
+
+/* Chart summary (last price / 24h change) */
+.chart-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 28px;
+  margin-top: 18px;
+}
+
+.summary-label {
+  color: var(--muted);
+  font-size: 9px;
+  letter-spacing: 1px;
+  font-weight: 800;
+}
+
+.summary-value {
+  margin-top: 3px;
+  font-size: 18px;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Watchlist: change column chauda karo + XAUT add karo */
+.watch-row {
+  grid-template-columns: minmax(0, 1.5fr) minmax(85px, 1fr) 64px;
+}
+
+#watchBtcChange,
+#watchEthChange,
+#watchSolChange,
+#watchXautChange {
+  text-align: right;
+  color: var(--muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 700px) {
+  .chart-area {
+    height: 300px;
+  }
+
+  .watch-row {
+    grid-template-columns: minmax(0, 1.25fr) minmax(70px, 0.9fr) 54px;
+  }
+
+  .chart-summary {
+    gap: 18px;
+  }
+
+  .summary-value {
+    font-size: 15px;
+  }
+}
