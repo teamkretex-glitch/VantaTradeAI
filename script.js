@@ -1,19 +1,42 @@
-
 "use strict";
+
+/* =========================================================
+   KreTeX AI - Market dashboard
+   Data source: Delta Exchange India (public REST + WebSocket)
+   Chart: TradingView Lightweight Charts v4.2.x
+   ========================================================= */
 
 const DELTA_API = "https://api.india.delta.exchange";
 const DELTA_WS = "wss://public-socket.india.delta.exchange";
-const CHART_RESOLUTION = "1h";
+
+const RESOLUTION = "1h";
+const RESOLUTION_SEC = 3600;
+const WS_CHANNEL = "candlestick_" + RESOLUTION;
+const HISTORY_DAYS = 14;
+
+const TICKER_REFRESH_MS = 5000;
+const FALLBACK_POLL_MS = 10000;
+const WS_STALE_MS = 45000;
+
+// Set to true once to see the first live websocket message in console.
+const DEBUG = false;
 
 let chart = null;
 let candleSeries = null;
+let resizeObserver = null;
+
 let currentSymbol = "BTCUSD";
 let chartRequestId = 0;
-let tickerSocket = null;
+let lastBarTime = 0;
+
 let chartSocket = null;
-let priceTimer = null;
 let reconnectTimer = null;
-let resizeObserver = null;
+let reconnectAttempts = 0;
+let staleTimer = null;
+let lastSocketMessageAt = 0;
+let fallbackTimer = null;
+let tickerTimer = null;
+let debugLogged = false;
 
 const $ = (id) => document.getElementById(id);
 
@@ -52,6 +75,10 @@ const markets = [
   }
 ];
 
+/* ---------------------------------------------------------
+   Formatting helpers
+   --------------------------------------------------------- */
+
 function formatPrice(value) {
   const n = Number(value);
   if (!Number.isFinite(n)) return "--";
@@ -86,15 +113,14 @@ function findMarket(symbol) {
   return markets.find((m) => m.symbol === symbol);
 }
 
+/* ---------------------------------------------------------
+   Ticker (prices + 24h change)
+   --------------------------------------------------------- */
+
 function getPrice(row) {
   if (!row) return NaN;
 
-  for (const value of [
-    row.close,
-    row.last_price,
-    row.mark_price,
-    row.spot_price
-  ]) {
+  for (const value of [row.close, row.last_price, row.mark_price, row.spot_price]) {
     const n = Number(value);
     if (Number.isFinite(n) && n > 0) return n;
   }
@@ -105,12 +131,17 @@ function getPrice(row) {
 function getChange(row) {
   if (!row) return NaN;
 
-  for (const value of [
-    row.change_24h,
-    row.mark_change_24h
-  ]) {
+  for (const value of [row.ltp_change_24h, row.mark_change_24h, row.change_24h]) {
+    if (value === null || value === undefined || value === "") continue;
     const n = Number(value);
     if (Number.isFinite(n)) return n;
+  }
+
+  // Fallback: calculate from 24h-ago open price and last price.
+  const open = Number(row.open);
+  const close = getPrice(row);
+  if (Number.isFinite(open) && open > 0 && Number.isFinite(close)) {
+    return ((close - open) / open) * 100;
   }
 
   return NaN;
@@ -123,13 +154,8 @@ function updateMarketCard(item, row) {
   const change = getChange(row);
 
   if (Number.isFinite(price)) {
-    if ($(item.price)) {
-      $(item.price).textContent = formatPrice(price);
-    }
-
-    if ($(item.watchPrice)) {
-      $(item.watchPrice).textContent = formatPrice(price);
-    }
+    if ($(item.price)) $(item.price).textContent = formatPrice(price);
+    if ($(item.watchPrice)) $(item.watchPrice).textContent = formatPrice(price);
 
     if (currentSymbol === item.symbol && $("chartLivePrice")) {
       $("chartLivePrice").textContent = formatPrice(price);
@@ -146,18 +172,18 @@ function updateMarketCard(item, row) {
     }
 
     setChange(item.watchChange, change);
+
+    if (currentSymbol === item.symbol) {
+      setChange("chartLiveChange", change);
+    }
   }
 }
 
 async function fetchMarkets() {
   try {
-    const response = await fetch(DELTA_API + "/v2/tickers", {
-      cache: "no-store"
-    });
+    const response = await fetch(DELTA_API + "/v2/tickers", { cache: "no-store" });
 
-    if (!response.ok) {
-      throw new Error("Ticker HTTP " + response.status);
-    }
+    if (!response.ok) throw new Error("Ticker HTTP " + response.status);
 
     const data = await response.json();
 
@@ -166,9 +192,7 @@ async function fetchMarkets() {
     }
 
     for (const item of markets) {
-      const row = data.result.find(
-        (r) => r.symbol === item.symbol
-      );
+      const row = data.result.find((r) => r.symbol === item.symbol);
 
       if (row) {
         updateMarketCard(item, row);
@@ -176,34 +200,34 @@ async function fetchMarkets() {
         console.warn("Ticker symbol not found:", item.symbol);
       }
     }
-
-    if (!chartSocket || chartSocket.readyState !== WebSocket.OPEN) {
-      setStatus("Delta Exchange India · Prices updated");
-    }
   } catch (error) {
     console.error("Delta ticker error:", error);
-    setStatus("Market feed unavailable · Retrying");
   }
 }
+
+/* ---------------------------------------------------------
+   Chart setup
+   --------------------------------------------------------- */
 
 function updateChartHeading(symbol) {
   const item = findMarket(symbol);
   const title = $("chartTitle");
 
-  if (title) {
-    title.textContent = item ? item.name : symbol;
-  }
+  if (title) title.textContent = item ? item.name : symbol;
 
-  document.querySelectorAll("[data-symbol], [data-chart-symbol]")
-    .forEach((button) => {
-      const buttonSymbol =
-        button.dataset.symbol || button.dataset.chartSymbol;
-
-      button.classList.toggle("active", buttonSymbol === symbol);
-    });
+  document.querySelectorAll("[data-symbol], [data-chart-symbol]").forEach((button) => {
+    const buttonSymbol = button.dataset.symbol || button.dataset.chartSymbol;
+    button.classList.toggle("active", buttonSymbol === symbol);
+  });
 
   const livePrice = $("chartLivePrice");
   if (livePrice) livePrice.textContent = "--";
+
+  const liveChange = $("chartLiveChange");
+  if (liveChange) {
+    liveChange.textContent = "--";
+    liveChange.classList.remove("positive", "negative");
+  }
 }
 
 function createChart() {
@@ -225,7 +249,7 @@ function createChart() {
 
   chart = LightweightCharts.createChart(container, {
     width: container.clientWidth || 600,
-    height: Math.max(300, container.clientHeight || 360),
+    height: Math.max(300, container.clientHeight || 420),
 
     layout: {
       background: { color: "#0b0f0d" },
@@ -240,11 +264,7 @@ function createChart() {
     rightPriceScale: {
       borderColor: "#303a33",
       autoScale: true,
-      scaleMargins: {
-        top: 0.12,
-        bottom: 0.12
-      },
-      mode: 0
+      scaleMargins: { top: 0.12, bottom: 0.12 }
     },
 
     timeScale: {
@@ -287,10 +307,13 @@ function createChart() {
 
   if (window.ResizeObserver) {
     resizeObserver = new ResizeObserver(() => {
-      if (chart && container.clientWidth > 0) {
-        chart.applyOptions({
-          width: container.clientWidth
-        });
+      if (!chart) return;
+
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+
+      if (width > 0 && height > 0) {
+        chart.applyOptions({ width, height });
       }
     });
 
@@ -298,55 +321,91 @@ function createChart() {
   }
 }
 
-function normalizeTime(value) {
+/* ---------------------------------------------------------
+   Candle normalising
+   --------------------------------------------------------- */
+
+// Converts seconds / milliseconds / microseconds / ISO strings to Unix seconds.
+function toUnixSeconds(value) {
+  if (value === null || value === undefined || value === "") return NaN;
+
   if (typeof value === "string" && !/^\d+(\.\d+)?$/.test(value)) {
     const parsed = Date.parse(value);
     return Number.isFinite(parsed) ? Math.floor(parsed / 1000) : NaN;
   }
 
-  let time = Number(value);
-  if (!Number.isFinite(time)) return NaN;
+  let t = Number(value);
+  if (!Number.isFinite(t)) return NaN;
 
-  // Delta historical API timestamps are Unix seconds.
-  // WebSocket microsecond timestamps are handled separately.
-  if (time > 1e14) time = Math.floor(time / 1e6);
-  else if (time > 1e11) time = Math.floor(time / 1000);
+  if (t > 1e14) t = t / 1e6;        // microseconds
+  else if (t > 1e11) t = t / 1e3;   // milliseconds
 
-  return Math.floor(time);
+  return Math.floor(t);
+}
+
+function bucketTime(seconds) {
+  return Math.floor(seconds / RESOLUTION_SEC) * RESOLUTION_SEC;
 }
 
 function normalizeCandle(c) {
-  const time = normalizeTime(c.time ?? c.t);
+  const time = toUnixSeconds(c.time ?? c.t);
 
-  const candle = {
-    time,
-    open: Number(c.open ?? c.o),
-    high: Number(c.high ?? c.h),
-    low: Number(c.low ?? c.l),
-    close: Number(c.close ?? c.c)
-  };
+  const open = Number(c.open ?? c.o);
+  const high = Number(c.high ?? c.h);
+  const low = Number(c.low ?? c.l);
+  const close = Number(c.close ?? c.c);
 
   if (
-    !Number.isFinite(candle.time) ||
-    !Number.isFinite(candle.open) ||
-    !Number.isFinite(candle.high) ||
-    !Number.isFinite(candle.low) ||
-    !Number.isFinite(candle.close) ||
-    candle.open <= 0 ||
-    candle.high <= 0 ||
-    candle.low <= 0 ||
-    candle.close <= 0 ||
-    candle.high < candle.low ||
-    candle.high < candle.open ||
-    candle.high < candle.close ||
-    candle.low > candle.open ||
-    candle.low > candle.close
+    !Number.isFinite(time) ||
+    !Number.isFinite(open) ||
+    !Number.isFinite(high) ||
+    !Number.isFinite(low) ||
+    !Number.isFinite(close) ||
+    open <= 0 || high <= 0 || low <= 0 || close <= 0
   ) {
     return null;
   }
 
-  return candle;
+  return {
+    time,
+    open,
+    high: Math.max(open, high, low, close),
+    low: Math.min(open, high, low, close),
+    close
+  };
 }
+
+async function fetchCandles(symbol, startSec, endSec) {
+  const params = new URLSearchParams({
+    resolution: RESOLUTION,
+    symbol,
+    start: String(startSec),
+    end: String(endSec)
+  });
+
+  const response = await fetch(
+    DELTA_API + "/v2/history/candles?" + params.toString(),
+    { cache: "no-store" }
+  );
+
+  if (!response.ok) throw new Error("Candles HTTP " + response.status);
+
+  const data = await response.json();
+
+  if (!data.success || !Array.isArray(data.result)) {
+    throw new Error("Unexpected candle response");
+  }
+
+  return data.result
+    .map(normalizeCandle)
+    .filter(Boolean)
+    .sort((a, b) => a.time - b.time)
+    .filter((c, i, arr) => i === 0 || c.time !== arr[i - 1].time);
+}
+
+/* ---------------------------------------------------------
+   Load historical candles for a symbol
+   --------------------------------------------------------- */
 
 async function loadChart(symbol) {
   currentSymbol = symbol;
@@ -357,171 +416,198 @@ async function loadChart(symbol) {
 
   if (!chart || !candleSeries) return;
 
-  if (chartSocket) {
-    chartSocket.onclose = null;
-    chartSocket.close();
-    chartSocket = null;
-  }
+  closeLiveSocket();
+  stopFallbackPolling();
+  lastBarTime = 0;
+  candleSeries.setData([]);
+
+  // Show the price we already have from the ticker.
+  fetchMarkets();
 
   setStatus(symbol + " · Loading historical candles...");
 
   try {
     const end = Math.floor(Date.now() / 1000);
-    const start = end - 7 * 24 * 60 * 60;
+    const start = end - HISTORY_DAYS * 24 * 60 * 60;
 
-    const params = new URLSearchParams({
-      resolution: CHART_RESOLUTION,
-      symbol,
-      start: String(start),
-      end: String(end)
-    });
-
-    const response = await fetch(
-      DELTA_API + "/v2/history/candles?" + params.toString(),
-      { cache: "no-store" }
-    );
-
-    if (!response.ok) {
-      throw new Error("Candles HTTP " + response.status);
-    }
-
-    const data = await response.json();
-
-    if (!data.success || !Array.isArray(data.result)) {
-      throw new Error("Unexpected candle response");
-    }
+    const candles = await fetchCandles(symbol, start, end);
 
     if (requestId !== chartRequestId) return;
 
-    const candles = data.result
-      .map(normalizeCandle)
-      .filter(Boolean)
-      .sort((a, b) => a.time - b.time)
-      .filter((c, i, arr) =>
-        i === 0 || c.time !== arr[i - 1].time
-      );
-
-    console.log("Delta candles:", symbol, candles.length, candles.slice(-3));
+    if (DEBUG) console.log("Delta candles:", symbol, candles.length, candles.slice(-3));
 
     if (candles.length < 2) {
-      setStatus(
-        symbol + " · Not enough historical candles returned"
-      );
-      console.warn("Insufficient candles:", data.result);
-      return;
-    }
-
-    const first = candles[0];
-    const last = candles[candles.length - 1];
-
-    if (first.time === last.time) {
-      setStatus(symbol + " · Candle timestamps are not distinct");
-      console.error("Bad candle timestamps:", candles);
+      setStatus(symbol + " · Not enough historical candles returned");
+      console.warn("Insufficient candles for", symbol, candles);
       return;
     }
 
     candleSeries.setData(candles);
-    candleSeries.priceScale().applyOptions({
-      autoScale: true,
-      scaleMargins: {
-        top: 0.05,
-        bottom: 0.05
-      }
-    });
-   
-    // Fit history once when a symbol is selected.
-    // Do not call fitContent for every live update, because that
-    // would repeatedly reset the user's zoom.
+    lastBarTime = candles[candles.length - 1].time;
+
     chart.timeScale().fitContent();
 
-    setStatus(
-      symbol + " · Delta Exchange India · Historical candles loaded"
-    );
+    setStatus(symbol + " · Delta Exchange India · Historical candles loaded");
 
     connectLiveChart(symbol);
+    startFallbackPolling(symbol);
   } catch (error) {
+    if (requestId !== chartRequestId) return;
     console.error("Delta candle request failed:", error);
     setStatus(symbol + " · Could not load candles · See console");
   }
 }
 
-function connectLiveChart(symbol) {
+/* ---------------------------------------------------------
+   Live candle updates
+   --------------------------------------------------------- */
+
+function applyLiveCandle(candle) {
+  if (!candleSeries || !candle) return;
+
+  // Lightweight Charts throws if we update a bar older than the latest one.
+  if (lastBarTime && candle.time < lastBarTime) return;
+
+  try {
+    candleSeries.update(candle);
+    lastBarTime = Math.max(lastBarTime, candle.time);
+
+    const livePrice = $("chartLivePrice");
+    if (livePrice) livePrice.textContent = formatPrice(candle.close);
+  } catch (error) {
+    console.warn("Candle update skipped:", error);
+  }
+}
+
+function closeLiveSocket() {
   if (reconnectTimer) {
     clearTimeout(reconnectTimer);
     reconnectTimer = null;
   }
 
-  if (chartSocket) {
-    chartSocket.onclose = null;
-    chartSocket.close();
+  if (staleTimer) {
+    clearInterval(staleTimer);
+    staleTimer = null;
   }
 
-  const socket = new WebSocket(DELTA_WS);
+  if (chartSocket) {
+    chartSocket.onopen = null;
+    chartSocket.onmessage = null;
+    chartSocket.onerror = null;
+    chartSocket.onclose = null;
+
+    try {
+      chartSocket.close();
+    } catch (e) {
+      /* ignore */
+    }
+
+    chartSocket = null;
+  }
+}
+
+function scheduleReconnect(symbol) {
+  if (reconnectTimer) clearTimeout(reconnectTimer);
+
+  const delay = Math.min(30000, 2000 * Math.pow(2, reconnectAttempts));
+  reconnectAttempts += 1;
+
+  reconnectTimer = setTimeout(() => {
+    reconnectTimer = null;
+    if (symbol === currentSymbol) connectLiveChart(symbol);
+  }, delay);
+}
+
+function connectLiveChart(symbol) {
+  closeLiveSocket();
+  debugLogged = false;
+
+  let socket;
+
+  try {
+    socket = new WebSocket(DELTA_WS);
+  } catch (error) {
+    console.error("WebSocket could not be created:", error);
+    scheduleReconnect(symbol);
+    return;
+  }
+
   chartSocket = socket;
 
   socket.onopen = () => {
     if (socket !== chartSocket) return;
 
+    reconnectAttempts = 0;
+    lastSocketMessageAt = Date.now();
+
+    socket.send(JSON.stringify({ type: "enable_heartbeat" }));
+
     socket.send(JSON.stringify({
       type: "subscribe",
       payload: {
-        channels: [{
-          name: "candlestick_1h",
-          symbols: [symbol]
-        }]
+        channels: [{ name: WS_CHANNEL, symbols: [symbol] }]
       }
     }));
 
-    console.log("Subscribed to Delta candles:", symbol);
     setStatus(symbol + " · Delta live candle feed connected");
+
+    // If the feed goes silent, drop it and reconnect.
+    staleTimer = setInterval(() => {
+      if (socket !== chartSocket) return;
+
+      if (Date.now() - lastSocketMessageAt > WS_STALE_MS) {
+        console.warn("Live feed stale, reconnecting...");
+        closeLiveSocket();
+        if (symbol === currentSymbol) connectLiveChart(symbol);
+      }
+    }, 10000);
   };
 
   socket.onmessage = (event) => {
     if (socket !== chartSocket || symbol !== currentSymbol) return;
 
+    lastSocketMessageAt = Date.now();
+
+    let message;
     try {
-      const message = JSON.parse(event.data);
-
-      if (message.type !== "candlestick_1h") return;
-
-      const messageSymbol = message.sy || message.symbol;
-      if (messageSymbol !== symbol) return;
-
-      const rawTime = Number(message.ts);
-
-      const candle = normalizeCandle({
-        time: rawTime > 1e14
-          ? Math.floor(rawTime / 1e6)
-          : normalizeTime(rawTime),
-        open: message.o,
-        high: message.h,
-        low: message.l,
-        close: message.c
-      });
-
-      if (!candle) {
-        console.warn("Invalid live candle:", message);
-        return;
-      }
-
-      candleSeries.update(candle);
-
-      const item = findMarket(symbol);
-      if (item) {
-        const change = getChange(message);
-        const price = candle.close;
-
-        if ($("chartLivePrice")) {
-          $("chartLivePrice").textContent = formatPrice(price);
-        }
-
-        setStatus(
-          symbol + " · Live candle · " + formatPrice(price)
-        );
-      }
+      message = JSON.parse(event.data);
     } catch (error) {
-      console.error("Live candle message error:", error);
+      return;
     }
+
+    if (!message || message.type !== WS_CHANNEL) return;
+
+    if (DEBUG && !debugLogged) {
+      console.log("LIVE MSG:", message);
+      debugLogged = true;
+    }
+
+    const messageSymbol = message.symbol || message.sy;
+    if (messageSymbol && messageSymbol !== symbol) return;
+
+    // Use the candle start time if present, else the message time.
+    // Either way, snap to the 1h bucket so we update the current candle
+    // instead of creating a new one on every tick.
+    let t = toUnixSeconds(
+      message.candle_start_time ?? message.start_time ?? message.ts ?? message.timestamp
+    );
+    if (!Number.isFinite(t)) t = Math.floor(Date.now() / 1000);
+
+    const candle = normalizeCandle({
+      time: bucketTime(t),
+      open: message.open ?? message.o,
+      high: message.high ?? message.h,
+      low: message.low ?? message.l,
+      close: message.close ?? message.c
+    });
+
+    if (!candle) {
+      console.warn("Invalid live candle:", message);
+      return;
+    }
+
+    applyLiveCandle(candle);
+    setStatus(symbol + " · Live · " + formatPrice(candle.close));
   };
 
   socket.onerror = (error) => {
@@ -531,33 +617,71 @@ function connectLiveChart(symbol) {
   socket.onclose = () => {
     if (socket !== chartSocket) return;
 
-    reconnectTimer = setTimeout(() => {
-      if (symbol === currentSymbol) {
-        connectLiveChart(symbol);
-      }
-    }, 5000);
+    chartSocket = null;
+    setStatus(symbol + " · Live feed disconnected · Reconnecting...");
+    scheduleReconnect(symbol);
   };
 }
+
+/* ---------------------------------------------------------
+   REST fallback: keeps the last candles fresh if WebSocket is down
+   --------------------------------------------------------- */
+
+async function refreshLatestCandles(symbol) {
+  try {
+    const end = Math.floor(Date.now() / 1000);
+    const start = end - 3 * RESOLUTION_SEC;
+    const candles = await fetchCandles(symbol, start, end);
+
+    if (symbol !== currentSymbol) return;
+
+    candles.forEach(applyLiveCandle);
+  } catch (error) {
+    console.warn("Fallback candle refresh failed:", error);
+  }
+}
+
+function startFallbackPolling(symbol) {
+  stopFallbackPolling();
+
+  fallbackTimer = setInterval(() => {
+    const socketOpen = chartSocket && chartSocket.readyState === WebSocket.OPEN;
+    const socketFresh = Date.now() - lastSocketMessageAt < WS_STALE_MS;
+
+    if (!socketOpen || !socketFresh) {
+      refreshLatestCandles(symbol);
+    }
+  }, FALLBACK_POLL_MS);
+}
+
+function stopFallbackPolling() {
+  if (fallbackTimer) {
+    clearInterval(fallbackTimer);
+    fallbackTimer = null;
+  }
+}
+
+/* ---------------------------------------------------------
+   Init
+   --------------------------------------------------------- */
 
 function initApp() {
   createChart();
 
   fetchMarkets();
 
-  if (priceTimer) clearInterval(priceTimer);
-  priceTimer = setInterval(fetchMarkets, 15000);
+  if (tickerTimer) clearInterval(tickerTimer);
+  tickerTimer = setInterval(fetchMarkets, TICKER_REFRESH_MS);
 
-  document.querySelectorAll("[data-symbol], [data-chart-symbol]")
-    .forEach((button) => {
-      button.addEventListener("click", () => {
-        const symbol =
-          button.dataset.symbol || button.dataset.chartSymbol;
+  document.querySelectorAll("[data-symbol], [data-chart-symbol]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const symbol = button.dataset.symbol || button.dataset.chartSymbol;
 
-        if (symbol && findMarket(symbol)) {
-          loadChart(symbol);
-        }
-      });
+      if (symbol && findMarket(symbol)) {
+        loadChart(symbol);
+      }
     });
+  });
 
   loadChart("BTCUSD");
 }
