@@ -242,6 +242,16 @@ function createChartIfNeeded() {
 
 async function loadChart(symbol) {
   currentSymbol = symbol;
+const title = $("chartTitle");
+ if (title) {
+  const names = {
+    BTCUSD: "BTC / USD",
+    ETHUSD: "ETH / USD",
+    SOLUSD: "SOL / USD",
+    XAUTUSD: "XAUT / USD"
+  };
+  title.textContent = names[symbol] || symbol;
+}
   const requestId = ++chartRequestId;
 
   if (chartSocket) {
