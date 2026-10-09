@@ -1,175 +1,597 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#10120f">
-  <meta name="description" content="VantaTradeAI — Crypto market data, candlestick charts and market analysis in one professional workspace.">
-  <title>VantaTradeAI | Market Terminal</title>
-  <link rel="stylesheet" href="style.css">
-  <script src="https://unpkg.com/lightweight-charts@4.2.2/dist/lightweight-charts.standalone.production.js"></script>
-  <script src="script.js" defer></script>
+  <meta name="theme-color" content="#080c0a">
+  <meta name="description" content="KreTeX AI — crypto market dashboard, live prices, charts and market intelligence.">
+  <title>KreTeX AI | Intelligent Market Dashboard</title>
+
+  <style>
+    :root {
+      --bg: #080c0a;
+      --panel: #101612;
+      --panel2: #141c16;
+      --border: #263229;
+      --text: #f0f5f0;
+      --muted: #94a397;
+      --green: #b6f36b;
+      --red: #ff657a;
+      --glow: rgba(182,243,107,.12);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background:
+        radial-gradient(ellipse at top left, rgba(57,103,60,.14), transparent 38%),
+        var(--bg);
+      color: var(--text);
+      font-family: Inter, system-ui, -apple-system, sans-serif;
+      font-size: 14px;
+    }
+
+    button { font: inherit; }
+
+    .container {
+      width: min(1440px, 100%);
+      margin: auto;
+      padding: 22px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding-bottom: 22px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: 43px;
+      height: 43px;
+      border-radius: 13px;
+      color: #091006;
+      background: linear-gradient(135deg, #d9ff9e, #86d94e);
+      font-size: 19px;
+      font-weight: 900;
+      box-shadow: 0 0 25px var(--glow);
+    }
+
+    .brand-name {
+      margin: 0;
+      font-size: 21px;
+      font-weight: 850;
+      letter-spacing: -.7px;
+    }
+
+    .brand-name span { color: var(--green); }
+
+    .tagline {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .live-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--green);
+      border: 1px solid #34472e;
+      background: #131e12;
+      padding: 9px 12px;
+      border-radius: 30px;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .live-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 10px var(--green);
+    }
+
+    .hero {
+      padding: 28px 0 22px;
+    }
+
+    .eyebrow {
+      color: var(--green);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    h1 {
+      font-size: clamp(26px, 4vw, 42px);
+      letter-spacing: -1.6px;
+      margin: 10px 0;
+    }
+
+    .hero p {
+      color: var(--muted);
+      line-height: 1.7;
+      margin: 0;
+      max-width: 720px;
+    }
+
+    .section-heading {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin: 22px 0 13px;
+    }
+
+    .section-heading h2 {
+      margin: 0;
+      font-size: 17px;
+    }
+
+    .muted { color: var(--muted); }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 13px;
+    }
+
+    .metric-card, .panel {
+      background: linear-gradient(145deg, #121913, #0d120f);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      min-width: 0;
+    }
+
+    .metric-card { padding: 18px; }
+
+    .metric-label {
+      color: var(--muted);
+      font-size: 12px;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .metric-value {
+      font-size: clamp(19px, 2vw, 27px);
+      font-weight: 800;
+      letter-spacing: -.7px;
+      margin: 15px 0 9px;
+      overflow-wrap: anywhere;
+    }
+
+    .metric-foot {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .positive { color: var(--green) !important; }
+    .negative { color: var(--red) !important; }
+
+    .dashboard {
+      display: grid;
+      grid-template-columns: minmax(0, 1.8fr) minmax(280px, .9fr);
+      gap: 16px;
+      margin-top: 18px;
+      align-items: start;
+    }
+
+    .panel { overflow: hidden; }
+
+    .panel-header {
+      padding: 18px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 13px;
+    }
+
+    .panel-header h2 {
+      font-size: 18px;
+      margin: 0;
+    }
+
+    .symbol-label {
+      color: var(--green);
+      font-size: 11px;
+      margin-top: 6px;
+    }
+
+    .coin-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .tab {
+      background: #161e18;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      color: #bac7bd;
+      padding: 9px 12px;
+      cursor: pointer;
+      transition: .2s;
+    }
+
+    .tab:hover { border-color: #728965; }
+
+    .tab.active {
+      color: var(--green);
+      border-color: #68884b;
+      background: #1b2917;
+    }
+
+    .chart-summary {
+      padding: 16px 18px;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px 22px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .summary-item { min-width: 95px; }
+
+    .summary-label {
+      color: var(--muted);
+      font-size: 11px;
+      margin-bottom: 6px;
+    }
+
+    .summary-value {
+      font-size: 16px;
+      font-weight: 750;
+    }
+
+    .chart-status {
+      padding: 11px 18px 0;
+      font-size: 12px;
+      color: var(--muted);
+      overflow-wrap: anywhere;
+    }
+
+    .chart-wrap {
+      position: relative;
+      width: 100%;
+      min-width: 0;
+      height: 390px;
+      padding: 8px;
+    }
+
+    #chart {
+      width: 100%;
+      height: 100%;
+      min-width: 0;
+    }
+
+    .chart-note {
+      padding: 0 18px 17px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.6;
+    }
+
+    .watch-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1.3fr) minmax(85px, 1fr) minmax(60px, .65fr);
+      align-items: center;
+      gap: 8px;
+      padding: 14px 16px;
+      border-bottom: 1px solid #202a22;
+    }
+
+    .watch-row:last-of-type { border-bottom: 0; }
+
+    .watch-head {
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+    }
+
+    .asset-name {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      min-width: 0;
+      font-weight: 700;
+    }
+
+    .asset-name small {
+      display: block;
+      margin-top: 4px;
+      font-weight: 400;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .asset-icon {
+      display: grid;
+      place-items: center;
+      flex: 0 0 31px;
+      height: 31px;
+      border-radius: 9px;
+      background: #202c21;
+      color: var(--green);
+      font-size: 15px;
+    }
+
+    .watch-row strong {
+      font-size: 12px;
+      text-align: right;
+      overflow-wrap: anywhere;
+    }
+
+    .watch-row > span:last-child { text-align: right; }
+
+    .panel-footnote {
+      margin: 0;
+      padding: 16px;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 11px;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 13px;
+      margin-top: 16px;
+    }
+
+    .info-card {
+      padding: 18px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+    }
+
+    .info-card h3 { margin: 0 0 9px; font-size: 14px; }
+    .info-card p { margin: 0; color: var(--muted); line-height: 1.65; font-size: 12px; }
+
+    footer {
+      margin-top: 26px;
+      padding: 20px 0;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.7;
+    }
+
+    @media (max-width: 900px) {
+      .dashboard { grid-template-columns: 1fr; }
+      .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .info-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 520px) {
+      .container { padding: 14px; }
+      header { align-items: flex-start; }
+      .brand-name { font-size: 18px; }
+      .tagline { max-width: 190px; line-height: 1.5; }
+      .live-badge { padding: 8px; font-size: 10px; }
+      .metric-card { padding: 13px; }
+      .metric-value { font-size: 19px; }
+      .panel-header { padding: 14px; }
+      .chart-wrap { height: 330px; padding: 4px; }
+      .chart-summary { gap: 14px; padding: 14px; }
+      .summary-item { min-width: 75px; }
+      .summary-value { font-size: 14px; }
+      .tab { padding: 8px 10px; }
+      .watch-row { padding: 13px 10px; grid-template-columns: minmax(0,1.1fr) minmax(78px,.9fr) minmax(50px,.6fr); gap: 5px; }
+      .watch-row strong { font-size: 11px; }
+      .asset-name { gap: 6px; font-size: 12px; }
+      .asset-icon { flex-basis: 27px; height: 27px; }
+    }
+  </style>
 </head>
+
 <body>
-  <header class="topbar">
-    <a class="brand" href="#">
-      <span class="brand-mark">V</span>
-      <span>VANTA<span class="brand-light">TRADE</span></span>
-    </a>
-    <div class="market-status">
-      <span class="status-dot"></span>
-      <span>MARKET DATA</span>
-    </div>
-    <button class="menu-button" id="menuButton" aria-label="Toggle navigation">☰</button>
-  </header>
-
-  <div class="app-layout">
-    <aside class="sidebar" id="sidebar">
-      <div class="side-label">WORKSPACE</div>
-      <a class="nav-link active" href="#overview"><span>▦</span> Overview</a>
-      <a class="nav-link" href="#market"><span>↗</span> Markets</a>
-      <a class="nav-link" href="#chart-section"><span>▥</span> Chart terminal</a>
-      <a class="nav-link" href="#analyst"><span>✳</span> AI analyst</a>
-
-      <div class="sidebar-bottom">
-        <div class="side-label">PLATFORM</div>
-        <div class="sidebar-note">Market intelligence<br><strong>Version 1.0</strong></div>
-        <div class="sidebar-foot">BUILT FOR BETTER DECISIONS</div>
-      </div>
-    </aside>
-
-    <main class="main-content" id="overview">
-      <section class="welcome-row">
+  <div class="container">
+    <header>
+      <div class="brand">
+        <div class="brand-mark">K</div>
         <div>
-          <div class="eyebrow">DIGITAL ASSET INTELLIGENCE</div>
-          <h1>Market <span>Overview</span></h1>
-          <p class="subheading">A clearer view of the digital asset market.</p>
+          <p class="brand-name">KreTeX <span>AI</span></p>
+          <div class="tagline">Intelligent Digital Market Dashboard</div>
         </div>
-        <div class="date-chip"><span class="status-dot"></span> PUBLIC MARKET DATA</div>
-      </section>
+      </div>
 
-      <section class="metric-grid" id="market">
-        <article class="metric-card">
-          <div class="metric-label">BITCOIN <span>BTC</span></div>
-          <div class="metric-value" id="btcPrice">—</div>
-          <div class="metric-foot" id="btcChange">Waiting for market data</div>
-        </article>
-        <article class="metric-card">
-          <div class="metric-label">ETHEREUM <span>ETH</span></div>
-          <div class="metric-value" id="ethPrice">—</div>
-          <div class="metric-foot" id="ethChange">Waiting for market data</div>
-        </article>
-        <article class="metric-card">
-          <div class="metric-label">TETHER GOLD <span>XAUT</span></div>
-          <div class="metric-value" id="xautPrice">—</div>
-          <div class="metric-foot" id="xautChange">Waiting for market data</div>
-        </article>
-        <article class="metric-card">
-          <div class="metric-label">SOLANA <span>SOL</span></div>
-          <div class="metric-value" id="solPrice">—</div>
-          <div class="metric-foot" id="solChange">Waiting for market data</div>
-        </article>
-      </section>
+      <div class="live-badge">
+        <span class="live-dot"></span>
+        <span>MARKET MONITOR</span>
+      </div>
+    </header>
 
-      <section class="panel chart-panel" id="chart-section">
-        <div class="panel-heading">
+    <section class="hero">
+      <div class="eyebrow">AI-powered market intelligence</div>
+      <h1>Markets, made clearer.</h1>
+      <p>
+        Track digital asset prices, explore historical candles and monitor
+        market movements from one responsive dashboard.
+      </p>
+    </section>
+
+    <div class="section-heading">
+      <h2>Market Overview</h2>
+      <span class="muted">USD markets · 24 hour change</span>
+    </div>
+
+    <section class="metrics">
+      <article class="metric-card">
+        <div class="metric-label">BITCOIN <span>BTC</span></div>
+        <div class="metric-value" id="btcPrice">--</div>
+        <div class="metric-foot" id="btcChange">Waiting for market data</div>
+      </article>
+
+      <article class="metric-card">
+        <div class="metric-label">ETHEREUM <span>ETH</span></div>
+        <div class="metric-value" id="ethPrice">--</div>
+        <div class="metric-foot" id="ethChange">Waiting for market data</div>
+      </article>
+
+      <article class="metric-card">
+        <div class="metric-label">SOLANA <span>SOL</span></div>
+        <div class="metric-value" id="solPrice">--</div>
+        <div class="metric-foot" id="solChange">Waiting for market data</div>
+      </article>
+
+      <article class="metric-card">
+        <div class="metric-label">TETHER GOLD <span>XAUT</span></div>
+        <div class="metric-value" id="xautPrice">--</div>
+        <div class="metric-foot" id="xautChange">Waiting for market data</div>
+      </article>
+    </section>
+
+    <section class="dashboard">
+      <article class="panel">
+        <div class="panel-header">
           <div>
-            <div class="eyebrow">PRICE ACTION</div>
             <h2 id="chartTitle">BTC / USD</h2>
+            <div class="symbol-label">DELTA EXCHANGE INDIA</div>
           </div>
-          <div class="timeframe-chip">1H <span>▾</span></div>
+
+          <div class="coin-tabs" id="chartTabs">
+            <button class="tab active" data-symbol="BTCUSD">BTC ₿</button>
+            <button class="tab" data-symbol="ETHUSD">ETH Ξ</button>
+            <button class="tab" data-symbol="SOLUSD">SOL ◎</button>
+            <button class="tab" data-symbol="XAUTUSD">XAUT Au</button>
+          </div>
         </div>
 
-        <div class="coin-tabs" id="chartTabs">
-          <button class="tab active" data-symbol="BTCUSD">BTC <span>₿</span></button>
-          <button class="tab" data-symbol="ETHUSD">ETH <span>Ξ</span></button>
-          <button class="tab" data-symbol="XAUTUSD">XAUT <span>Au</span></button>
-          <button class="tab" data-symbol="SOLUSD">SOL <span>◎</span></button>
+        <div class="chart-summary">
+          <div class="summary-item">
+            <div class="summary-label">LAST PRICE</div>
+            <div class="summary-value" id="chartLivePrice">--</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-label">24H CHANGE</div>
+            <div class="summary-value" id="chartLiveChange">--</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-label">TIMEFRAME</div>
+            <div class="summary-value">1 Hour</div>
+          </div>
         </div>
 
-        <div class="chart-status" id="chartStatus">Connecting to public market data…</div>
-        <div id="chart" class="chart-area" aria-label="Candlestick price chart"></div>
-        <div class="chart-legend"><span class="legend-green"></span> Bullish <span class="legend-red"></span> Bearish <span class="legend-source">DELTA EXCHANGE INDIA</span></div>
-      </section>
+        <div class="chart-status" id="chartStatus" role="status" aria-live="polite">
+          Connecting to Delta Exchange India...
+        </div>
 
-      <section class="lower-grid">
-        <article class="panel watchlist-panel">
-          <div class="panel-heading">
-            <div>
-              <div class="eyebrow">LIVE FEED</div>
-              <h2>Market Watch</h2>
-            </div>
-            <span class="panel-tag">SPOT</span>
-          </div>
-          
-<div class="watch-row watch-head">
-  <span>ASSET</span>
-  <span>LAST PRICE</span>
-  <span>24H</span>
-</div>
+        <div class="chart-wrap">
+          <div id="chart"></div>
+        </div>
 
-<div class="watch-row" id="watchBTC">
-  <span class="asset-name">
-    <b class="asset-icon">₿</b>
-    <span>Bitcoin<small>BTC / USD</small></span>
-  </span>
-  <strong id="watchBtcPrice">—</strong>
-  <span id="watchBtcChange">—</span>
-</div>
+        <p class="chart-note">
+          Historical candles and live updates depend on Delta Exchange India
+          API availability. Chart zoom: pinch on mobile or use the price/time
+          scales. Live data is not a guarantee of trade execution prices.
+        </p>
+      </article>
 
-<div class="watch-row" id="watchETH">
-  <span class="asset-name">
-    <b class="asset-icon">Ξ</b>
-    <span>Ethereum<small>ETH / USD</small></span>
-  </span>
-  <strong id="watchEthPrice">—</strong>
-  <span id="watchEthChange">—</span>
-</div>
+      <aside class="panel">
+        <div class="panel-header">
+          <h2>Market Watchlist</h2>
+          <span class="muted">24H</span>
+        </div>
 
-<div class="watch-row" id="watchSOL">
-  <span class="asset-name">
-    <b class="asset-icon">◎</b>
-    <span>Solana<small>SOL / USD</small></span>
-  </span>
-  <strong id="watchSolPrice">—</strong>
-  <span id="watchSolChange">—</span>
-</div>
+        <div class="watch-row watch-head">
+          <span>Asset</span>
+          <span style="text-align:right">Last price</span>
+          <span style="text-align:right">Change</span>
+        </div>
 
-<div class="watch-row" id="watchXAUT">
-  <span class="asset-name">
-    <b class="asset-icon">Au</b>
-    <span>Tether Gold<small>XAUT / USD</small></span>
-  </span>
-  <strong id="watchXautPrice">—</strong>
-  <span id="watchXautChange">—</span>
-</div>
+        <div class="watch-row" id="watchBTC">
+          <span class="asset-name">
+            <b class="asset-icon">₿</b>
+            <span>Bitcoin<small>BTC / USD</small></span>
+          </span>
+          <strong id="watchBtcPrice">--</strong>
+          <span id="watchBtcChange">--</span>
+        </div>
 
-<p class="panel-footnote">
-  Market data provided by Delta Exchange India. Prices may be delayed or unavailable.
-</p>
+        <div class="watch-row" id="watchETH">
+          <span class="asset-name">
+            <b class="asset-icon">Ξ</b>
+            <span>Ethereum<small>ETH / USD</small></span>
+          </span>
+          <strong id="watchEthPrice">--</strong>
+          <span id="watchEthChange">--</span>
+        </div>
 
-        <article class="panel analyst-panel" id="analyst">
-          <div class="panel-heading">
-            <div>
-              <div class="eyebrow">RESEARCH DESK</div>
-              <h2>AI Analyst Workspace</h2>
-            </div>
-            <span class="analyst-symbol">✳</span>
-          </div>
-          <div class="analyst-placeholder">
-            <div class="analyst-orbit">V</div>
-            <h3>Market Signal</h3>
-            <p>This workspace is ready for market analysis tools. Automated recommendations are not active yet.</p>
-            <div class="analyst-disclaimer">NO GUARANTEED RETURNS · NOT FINANCIAL ADVICE</div>
-          </div>
-        </article>
-      </section>
+        <div class="watch-row" id="watchSOL">
+          <span class="asset-name">
+            <b class="asset-icon">◎</b>
+            <span>Solana<small>SOL / USD</small></span>
+          </span>
+          <strong id="watchSolPrice">--</strong>
+          <span id="watchSolChange">--</span>
+        </div>
 
-      <footer class="page-footer">
-        <span>VANTATRADEAI <span class="footer-separator">/</span> MARKET TERMINAL</span>
-        <span>Independent market research interface</span>
-      </footer>
-    </main>
+        <div class="watch-row" id="watchXAUT">
+          <span class="asset-name">
+            <b class="asset-icon">Au</b>
+            <span>Tether Gold<small>XAUT / USD</small></span>
+          </span>
+          <strong id="watchXautPrice">--</strong>
+          <span id="watchXautChange">--</span>
+        </div>
+
+        <p class="panel-footnote">
+          Data source: Delta Exchange India public market API.
+          A market may be unavailable if the exchange does not list that symbol.
+        </p>
+      </aside>
+    </section>
+
+    <div class="section-heading">
+      <h2>Market Intelligence</h2>
+      <span class="muted">Dashboard tools</span>
+    </div>
+
+    <section class="info-grid">
+      <article class="info-card">
+        <h3>Live Market Monitoring</h3>
+        <p>Track available market prices and daily changes as public data arrives.</p>
+      </article>
+      <article class="info-card">
+        <h3>Historical Price Charts</h3>
+        <p>Review hourly candle history and zoom in or out to inspect price movement.</p>
+      </article>
+      <article class="info-card">
+        <h3>Risk Awareness</h3>
+        <p>Market information is for research and education. No automated orders are placed by this dashboard.</p>
+      </article>
+    </section>
+
+    <footer>
+      <strong>KreTeX AI</strong> · Founded by Kamlesh Rajput<br>
+      Public market data may be delayed or unavailable. This dashboard is not
+      financial advice. Verify prices directly with the exchange before making
+      financial decisions.
+    </footer>
   </div>
+
+  <!-- Lightweight Charts v4 API is compatible with addCandlestickSeries(). -->
+  <script src="https://unpkg.com/lightweight-charts@4.2.2/dist/lightweight-charts.standalone.production.js"></script>
+  <script src="./script.js"></script>
 </body>
 </html>
