@@ -1,472 +1,478 @@
+
 "use strict";
+
+// VantaTradeAI — Delta Exchange India public market data
+// Public data only. No order placement or private API keys.
+
+const DELTA_API = "https://api.india.delta.exchange";
+const DELTA_WS = "wss://public-socket.india.delta.exchange";
 
 let chart = null;
 let candleSeries = null;
-let currentSymbol = "BTCUSDT";
+let currentSymbol = "BTCUSD";
 let chartRequestId = 0;
+let tickerSocket = null;
+let chartSocket = null;
+let tickerReconnectTimer = null;
+let chartReconnectTimer = null;
 
 const $ = (id) => document.getElementById(id);
 
-function formatPrice(value) {
-  if (!Number.isFinite(value)) return "—";
+const markets = [
+  {
+    symbol: "BTCUSD",
+    price: "btcPrice",
+    change: "btcChange",
+    watchPrice: "watchBtcPrice",
+    watchChange: "watchBtcChange"
+  },
+  {
+    symbol: "ETHUSD",
+    price: "ethPrice",
+    change: "ethChange",
+    watchPrice: "watchEthPrice",
+    watchChange: "watchEthChange"
+  },
+  {
+    symbol: "SOLUSD",
+    price: "solPrice",
+    change: "solChange",
+    watchPrice: "watchSolPrice",
+    watchChange: "watchSolChange"
+  },
+  {
+    symbol: "XAUTUSD",
+    price: "xautPrice",
+    change: "xautChange",
+    watchPrice: "watchXautPrice",
+    watchChange: "watchXautChange"
+  }
+];
 
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: value >= 100 ? 2 : 4
-  }).format(value);
+function formatPrice(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "--";
+
+  return n.toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: n >= 1000 ? 2 : 6
+  });
 }
 
 function formatPercent(value) {
-  if (!Number.isFinite(value)) return "—";
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "--";
 
-  const sign = value > 0 ? "+" : "";
-  return sign + value.toFixed(2) + "%";
+  return (n > 0 ? "+" : "") + n.toFixed(2) + "%";
 }
 
 function setChange(id, value) {
-  const element = $(id);
-  if (!element) return;
+  const el = $(id);
+  if (!el) return;
 
-  element.textContent = formatPercent(value);
-  element.classList.toggle("positive", value > 0);
-  element.classList.toggle("negative", value < 0);
+  el.textContent = formatPercent(value);
+  el.classList.toggle("positive", Number(value) > 0);
+  el.classList.toggle("negative", Number(value) < 0);
 }
 
-let marketSocket = null;
+function setStatus(message) {
+  const el = $("chartStatus");
+  if (el && !el.dataset.chartError) {
+    el.textContent = message;
+  }
+}
 
-function connectLivePrices() {
-  if (marketSocket) {
-    marketSocket.close();
+function findTicker(rows, symbol) {
+  return rows.find((row) => row.symbol === symbol);
+}
+
+function getTickerPrice(row) {
+  if (!row) return NaN;
+
+  // Prefer the latest traded/close price when available.
+  const candidates = [
+    row.close,
+    row.last_price,
+    row.mark_price
+  ];
+
+  for (const value of candidates) {
+    const price = Number(value);
+    if (Number.isFinite(price) && price > 0) return price;
   }
 
-  const streams = [
-    "btcusdt@ticker",
-    "ethusdt@ticker",
-    "solusdt@ticker"
-  ].join("/");
+  return NaN;
+}
 
-  marketSocket = new WebSocket(
-    "wss://stream.binance.com:9443/stream?streams=" + streams
-  );
+function getTickerChange(row) {
+  if (!row) return NaN;
 
-  marketSocket.onmessage = (event) => {
-    try {
-      const message = JSON.parse(event.data);
-      const data = message.data;
+  const candidates = [
+    row.change_24h,
+    row.mark_change_24h
+  ];
 
-      const config = {
-        BTCUSDT: {
-          price: "btcPrice",
-          change: "btcChange",
-          watchPrice: "watchBtcPrice",
-          watchChange: "watchBtcChange"
-        },
-        ETHUSDT: {
-          price: "ethPrice",
-          change: "ethChange",
-          watchPrice: "watchEthPrice",
-          watchChange: "watchEthChange"
-        },
-        SOLUSDT: {
-          price: "solPrice",
-          change: "solChange",
-          watchPrice: "watchSolPrice",
-          watchChange: "watchSolChange"
-        }
-      };
+  for (const value of candidates) {
+    const change = Number(value);
+    if (Number.isFinite(change)) return change;
+  }
 
-      const item = config[data.s];
-      if (!item) return;
+  return NaN;
+}
 
-      const price = Number(data.c);
-      const change = Number(data.P);
+function updateMarketCard(item, row) {
+  if (!row) return;
 
-      if ($(item.price)) {
-        $(item.price).textContent = formatPrice(price);
-      }
+  const price = getTickerPrice(row);
+  const change = getTickerChange(row);
 
-      if ($(item.watchPrice)) {
-        $(item.watchPrice).textContent = formatPrice(price);
-      }
-
-      if ($(item.change)) {
-        $(item.change).textContent =
-          formatPercent(change) + " · 24H";
-        $(item.change).classList.toggle("positive", change > 0);
-        $(item.change).classList.toggle("negative", change < 0);
-      }
-
-      setChange(item.watchChange, change);
-    } catch (error) {
-      console.error("Live price update failed:", error);
+  if (Number.isFinite(price)) {
+    if ($(item.price)) {
+      $(item.price).textContent = formatPrice(price);
     }
-  };
 
-  marketSocket.onclose = () => {
-    setTimeout(connectLivePrices, 5000);
-  };
+    if ($(item.watchPrice)) {
+      $(item.watchPrice).textContent = formatPrice(price);
+    }
+  }
 
-  marketSocket.onerror = () => {
-    marketSocket.close();
-  };
+  if (Number.isFinite(change)) {
+    if ($(item.change)) {
+      $(item.change).textContent =
+        formatPercent(change) + " · 24H";
+
+      $(item.change).classList.toggle("positive", change > 0);
+      $(item.change).classList.toggle("negative", change < 0);
+    }
+
+    setChange(item.watchChange, change);
+  }
 }
 
 async function fetchMarkets() {
   try {
     const response = await fetch(
-      "https://api.india.delta.exchange/v2/tickers",
+      DELTA_API + "/v2/tickers",
       { cache: "no-store" }
     );
 
     if (!response.ok) {
-      throw new Error("Delta API HTTP " + response.status);
+      throw new Error("Ticker API HTTP " + response.status);
     }
 
-    const result = await response.json();
+    const data = await response.json();
 
-    if (!result.success || !Array.isArray(result.result)) {
-      throw new Error("Invalid Delta ticker response");
+    if (!data.success || !Array.isArray(data.result)) {
+      throw new Error("Unexpected Delta ticker response");
     }
 
-    const rows = result.result;
-
-    const config = [
-      {
-        symbol: "BTCUSD",
-        price: "btcPrice",
-        change: "btcChange",
-        watchPrice: "watchBtcPrice",
-        watchChange: "watchBtcChange"
-      },
-      {
-        symbol: "ETHUSD",
-        price: "ethPrice",
-        change: "ethChange",
-        watchPrice: "watchEthPrice",
-        watchChange: "watchEthChange"
-      },
-      {
-        symbol: "SOLUSD",
-        price: "solPrice",
-        change: "solChange",
-        watchPrice: "watchSolPrice",
-        watchChange: "watchSolChange"
-      },
-      {
-        symbol: "XAUTUSD",
-        price: "xautPrice",
-        change: "xautChange",
-        watchPrice: "watchXautPrice",
-        watchChange: "watchXautChange"
-      }
-    ];
-
-    for (const item of config) {
-      const market = rows.find(
-        (row) => row.symbol === item.symbol
+    for (const item of markets) {
+      updateMarketCard(
+        item,
+        findTicker(data.result, item.symbol)
       );
-
-      if (!market) {
-        console.warn("Delta symbol unavailable:", item.symbol);
-        continue;
-      }
-
-      const price = Number(
-        market.mark_price ?? market.close
-      );
-
-      const change = Number(market.change_24h);
-
-      if (!Number.isFinite(price)) {
-        console.warn("Invalid price:", item.symbol, market);
-        continue;
-      }
-
-      if ($(item.price)) {
-        $(item.price).textContent = formatPrice(price);
-      }
-
-      if ($(item.watchPrice)) {
-        $(item.watchPrice).textContent = formatPrice(price);
-      }
-
-      if (Number.isFinite(change)) {
-        if ($(item.change)) {
-          $(item.change).textContent =
-            formatPercent(change) + " · 24H";
-
-          $(item.change).classList.toggle(
-            "positive",
-            change > 0
-          );
-
-          $(item.change).classList.toggle(
-            "negative",
-            change < 0
-          );
-        }
-
-        setChange(item.watchChange, change);
-      }
     }
 
-    const status = $("chartStatus");
-
-    if (status && !status.dataset.chartError) {
-      status.textContent =
-        "Delta Exchange India connected · Refreshing every 30 seconds";
-    }
-
+    setStatus("Delta Exchange India · Public market data connected");
+    console.log("Delta ticker data received:", data.result.length);
   } catch (error) {
-    console.error("Delta market prices failed:", error);
-
-    const status = $("chartStatus");
-
-    if (status && !status.dataset.chartError) {
-      status.textContent =
-        "Delta market feed unavailable · Retry later";
-    }
+    console.error("Delta ticker request failed:", error);
+    setStatus("Delta market data unavailable · Retrying");
   }
 }
 
 function createChartIfNeeded() {
-  if (chart) return;
-
   const container = $("chart");
 
   if (!container) {
-    throw new Error("Chart container is missing");
+    console.warn('Chart container with id="chart" was not found.');
+    return;
   }
 
-  if (typeof LightweightCharts === "undefined") {
-    throw new Error("Chart library did not load");
+  if (!window.LightweightCharts) {
+    setStatus("Chart library not loaded");
+    return;
   }
+
+  if (chart) return;
 
   chart = LightweightCharts.createChart(container, {
-    width: container.clientWidth || 300,
+    width: container.clientWidth || 600,
     height: 330,
     layout: {
-      background: { color: "#171a16" },
-      textColor: "#929b8b"
+      background: { color: "#0b0f0d" },
+      textColor: "#b9c3bd"
     },
     grid: {
-      vertLines: { color: "#30372c" },
-      horzLines: { color: "#30372c" }
+      vertLines: { color: "#202923" },
+      horzLines: { color: "#202923" }
     },
     rightPriceScale: {
-      borderColor: "#30372c"
+      borderColor: "#303a33"
     },
     timeScale: {
-      borderColor: "#30372c",
+      borderColor: "#303a33",
       timeVisible: true,
       secondsVisible: false
     },
-    crosshair: {
-      vertLine: { color: "#c5f46766" },
-      horzLine: { color: "#c5f46766" }
+    localization: {
+      priceFormatter: (price) => formatPrice(price)
     }
   });
 
   candleSeries = chart.addCandlestickSeries({
-    upColor: "#75df9b",
-    downColor: "#ff7777",
-    borderUpColor: "#75df9b",
-    borderDownColor: "#ff7777",
-    wickUpColor: "#75df9b",
-    wickDownColor: "#ff7777"
+    upColor: "#b6f36b",
+    downColor: "#ff657a",
+    borderUpColor: "#b6f36b",
+    borderDownColor: "#ff657a",
+    wickUpColor: "#b6f36b",
+    wickDownColor: "#ff657a"
   });
 
   if (window.ResizeObserver) {
-    const observer = new ResizeObserver(() => {
+    new ResizeObserver(() => {
       if (chart && container.clientWidth) {
-        chart.applyOptions({ width: container.clientWidth });
+        chart.applyOptions({
+          width: container.clientWidth
+        });
       }
-    });
-    observer.observe(container);
-  } else {
-    window.addEventListener("resize", () => {
-      if (chart && container.clientWidth) {
-        chart.applyOptions({ width: container.clientWidth });
-      }
-    });
+    }).observe(container);
   }
-}
-
-let chartSocket = null;
-
-function connectLiveChart(symbol) {
-  if (chartSocket) {
-    chartSocket.close();
-    chartSocket = null;
-  }
-
-  chartSocket = new WebSocket(
-    "wss://stream.binance.com:9443/ws/" +
-    symbol.toLowerCase() +
-    "@kline_1h"
-  );
-
-  chartSocket.onmessage = (event) => {
-    try {
-      const message = JSON.parse(event.data);
-      const k = message.k;
-
-      if (!k || !candleSeries || symbol !== currentSymbol) {
-        return;
-      }
-
-      candleSeries.update({
-        time: Math.floor(k.t / 1000),
-        open: Number(k.o),
-        high: Number(k.h),
-        low: Number(k.l),
-        close: Number(k.c)
-      });
-
-      const status = $("chartStatus");
-
-      if (status && !status.dataset.chartError) {
-        status.textContent =
-          symbol.replace("USDT", "") +
-          "/USDT · Live candle · Latest price: " +
-          formatPrice(Number(k.c));
-      }
-    } catch (error) {
-      console.error("Live chart update failed:", error);
-    }
-  };
-
-  chartSocket.onerror = () => {
-    console.error("Live chart WebSocket error");
-  };
 }
 
 async function loadChart(symbol) {
   currentSymbol = symbol;
   const requestId = ++chartRequestId;
-  
-  connectLiveChart(symbol);
-  
-  const title = $("chartTitle");
-  const status = $("chartStatus");
 
-  if (title) title.textContent = symbol.replace("USDT", "") + " / USDT";
-
-  if (status) {
-    status.dataset.chartError = "";
-    status.textContent = "Loading " + symbol.replace("USDT", "") + " candles…";
+  if (chartSocket) {
+    chartSocket.onclose = null;
+    chartSocket.close();
+    chartSocket = null;
   }
 
-  document.querySelectorAll("#chartTabs .tab").forEach((button) => {
-    button.classList.toggle("active", button.dataset.symbol === symbol);
-  });
+  createChartIfNeeded();
+
+  if (!chart || !candleSeries) return;
+
+  setStatus(symbol + " · Loading Delta candles...");
 
   try {
-    createChartIfNeeded();
+    const end = Math.floor(Date.now() / 1000);
+    const start = end - 100 * 60 * 60;
 
-    const url =
-      "https://api.binance.com/api/v3/klines" +
-      "?symbol=" + encodeURIComponent(symbol) +
-      "&interval=1h&limit=100";
+    const params = new URLSearchParams({
+      resolution: "1h",
+      symbol,
+      start: String(start),
+      end: String(end)
+    });
 
-    const response = await fetch(url, { cache: "no-store" });
-
-    if (!response.ok) {
-      throw new Error("Binance candle API HTTP " + response.status);
-    }
-
-    const rows = await response.json();
-
-    if (requestId !== chartRequestId || symbol !== currentSymbol) return;
-
-    if (!Array.isArray(rows) || rows.length === 0) {
-      throw new Error("No candle data returned");
-    }
-
-    const candles = rows.map((row) => ({
-      time: Math.floor(Number(row[0]) / 1000),
-      open: Number(row[1]),
-      high: Number(row[2]),
-      low: Number(row[3]),
-      close: Number(row[4])
-    }));
-
-    if (candles.some((candle) =>
-      !Number.isFinite(candle.time) ||
-      !Number.isFinite(candle.open) ||
-      !Number.isFinite(candle.high) ||
-      !Number.isFinite(candle.low) ||
-      !Number.isFinite(candle.close)
-    )) {
-      throw new Error("Invalid candle values");
-    }
-
-    candles.sort((a, b) => a.time - b.time);
-
-    const uniqueCandles = candles.filter((candle, index, array) =>
-      index === 0 || candle.time > array[index - 1].time
+    const response = await fetch(
+      DELTA_API + "/v2/history/candles?" + params.toString(),
+      { cache: "no-store" }
     );
 
-    
-candleSeries.setData(uniqueCandles);
-
-candleSeries.priceScale().applyOptions({
-  autoScale: true
-});
-
-chart.timeScale().applyOptions({
-  rightOffset: 5,
-  barSpacing: 8
-});
-
-chart.timeScale().fitContent();
-
-
-    if (status) {
-      status.dataset.chartError = "";
-      status.textContent =
-        symbol.replace("USDT", "") + "/USDT · " +
-        uniqueCandles.length + " hourly candles loaded · Latest close: " +
-        formatPrice(uniqueCandles[uniqueCandles.length - 1].close);
+    if (!response.ok) {
+      throw new Error("Candle API HTTP " + response.status);
     }
-  } catch (error) {
+
+    const data = await response.json();
+
+    if (!data.success || !Array.isArray(data.result)) {
+      throw new Error("Unexpected Delta candle response");
+    }
+
     if (requestId !== chartRequestId) return;
 
-    console.error("Chart loading failed:", error);
+    const candles = data.result
+      .map((c) => ({
+        time: Number(c.time),
+        open: Number(c.open),
+        high: Number(c.high),
+        low: Number(c.low),
+        close: Number(c.close)
+      }))
+      .filter((c) =>
+        Number.isFinite(c.time) &&
+        Number.isFinite(c.open) &&
+        Number.isFinite(c.high) &&
+        Number.isFinite(c.low) &&
+        Number.isFinite(c.close)
+      )
+      .sort((a, b) => a.time - b.time)
+      .filter((c, i, arr) =>
+        i === 0 || c.time !== arr[i - 1].time
+      );
 
-    if (status) {
-      status.dataset.chartError = "true";
-      status.textContent = "Chart error: " + error.message;
-    }
+    candleSeries.setData(candles);
+    chart.timeScale().fitContent();
 
-    if (title) {
-      title.textContent = symbol.replace("USDT", "") + " / USDT";
-    }
+    setStatus(
+      symbol + " · Delta Exchange India · Live updates starting"
+    );
+
+    connectLiveChart(symbol);
+  } catch (error) {
+    console.error("Delta candle request failed:", error);
+    setStatus(symbol + " · Could not load Delta candles");
   }
 }
 
+function connectLivePrices() {
+  if (tickerReconnectTimer) {
+    clearTimeout(tickerReconnectTimer);
+    tickerReconnectTimer = null;
+  }
+
+  if (tickerSocket) {
+    tickerSocket.onclose = null;
+    tickerSocket.close();
+  }
+
+  tickerSocket = new WebSocket(DELTA_WS);
+
+  tickerSocket.onopen = () => {
+    tickerSocket.send(JSON.stringify({
+      type: "subscribe",
+      payload: {
+        channels: [{
+          name: "ticker",
+          symbols: markets.map((m) => m.symbol)
+        }]
+      }
+    }));
+
+    console.log("Delta ticker WebSocket connected");
+  };
+
+  tickerSocket.onmessage = (event) => {
+    try {
+      const message = JSON.parse(event.data);
+
+      // Delta ticker updates can carry one or more entries in "d".
+      const rows = Array.isArray(message.d)
+        ? message.d
+        : message.symbol
+          ? [message]
+          : [];
+
+      for (const row of rows) {
+        const symbol = row.s || row.symbol;
+        const item = markets.find((m) => m.symbol === symbol);
+
+        if (item) updateMarketCard(item, row);
+      }
+    } catch (error) {
+      console.error("Delta ticker message error:", error);
+    }
+  };
+
+  tickerSocket.onerror = () => {
+    console.warn("Delta ticker WebSocket error");
+  };
+
+  tickerSocket.onclose = () => {
+    tickerReconnectTimer = setTimeout(connectLivePrices, 5000);
+  };
+}
+
+function connectLiveChart(symbol) {
+  if (chartReconnectTimer) {
+    clearTimeout(chartReconnectTimer);
+    chartReconnectTimer = null;
+  }
+
+  if (chartSocket) {
+    chartSocket.onclose = null;
+    chartSocket.close();
+  }
+
+  chartSocket = new WebSocket(DELTA_WS);
+
+  chartSocket.onopen = () => {
+    chartSocket.send(JSON.stringify({
+      type: "subscribe",
+      payload: {
+        channels: [{
+          name: "candlestick_1h",
+          symbols: [symbol]
+        }]
+      }
+    }));
+
+    console.log("Delta live candles subscribed:", symbol);
+  };
+
+  chartSocket.onmessage = (event) => {
+    try {
+      const message = JSON.parse(event.data);
+
+      if (message.type !== "candlestick_1h") return;
+
+      const candleSymbol = message.sy || message.symbol;
+      if (candleSymbol !== currentSymbol || symbol !== currentSymbol) {
+        return;
+      }
+
+      const candle = {
+        time: Math.floor(Number(message.ts) / 1000000),
+        open: Number(message.o),
+        high: Number(message.h),
+        low: Number(message.l),
+        close: Number(message.c)
+      };
+
+      if (
+        !Number.isFinite(candle.time) ||
+        !Number.isFinite(candle.open) ||
+        !Number.isFinite(candle.high) ||
+        !Number.isFinite(candle.low) ||
+        !Number.isFinite(candle.close)
+      ) {
+        return;
+      }
+
+      candleSeries.update(candle);
+      setStatus(
+        symbol + " · Delta live candle · " +
+        formatPrice(candle.close)
+      );
+    } catch (error) {
+      console.error("Delta live candle error:", error);
+    }
+  };
+
+  chartSocket.onerror = () => {
+    console.warn("Delta chart WebSocket error");
+  };
+
+  chartSocket.onclose = () => {
+    chartReconnectTimer = setTimeout(() => {
+      if (symbol === currentSymbol) connectLiveChart(symbol);
+    }, 5000);
+  };
+}
+
 function initApp() {
-  document.querySelectorAll("#chartTabs .tab").forEach((button) => {
+  fetchMarkets();
+  connectLivePrices();
+  loadChart("BTCUSD");
+
+  window.setInterval(fetchMarkets, 30000);
+
+  document.querySelectorAll("[data-symbol]").forEach((button) => {
     button.addEventListener("click", () => {
-      loadChart(button.dataset.symbol);
+      const symbol = button.dataset.symbol;
+      if (symbol) loadChart(symbol);
     });
   });
 
-  const menuButton = $("menuButton");
-  const sidebar = $("sidebar");
-
-  if (menuButton && sidebar) {
-    menuButton.addEventListener("click", () => {
-      sidebar.classList.toggle("open");
+  document.querySelectorAll("[data-chart-symbol]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const symbol = button.dataset.chartSymbol;
+      if (symbol) loadChart(symbol);
     });
-  }
-
-  fetchMarkets();
-  connectLivePrices();
-  loadChart("BTCUSDT");
-
-  window.setInterval(fetchMarkets, 30000);
+  });
 }
 
 if (document.readyState === "loading") {
@@ -474,53 +480,3 @@ if (document.readyState === "loading") {
 } else {
   initApp();
 }
-
-
-async function testDeltaMarketData() {
-  const status = document.getElementById("chartStatus");
-
-  try {
-    const response = await fetch(
-      "https://api.india.delta.exchange/v2/tickers"
-    );
-
-    if (!response.ok) {
-      throw new Error("HTTP " + response.status);
-    }
-
-    const result = await response.json();
-
-    if (!result.success || !Array.isArray(result.result)) {
-      throw new Error("Unexpected API response");
-    }
-
-    console.log("Delta API connected:", result.result.length, "tickers");
-    console.log(
-      "Available symbols:",
-      result.result
-        .filter(item =>
-          ["BTCUSD", "ETHUSD", "SOLUSD", "XAUTUSD"].includes(item.symbol)
-        )
-        .map(item => ({
-          symbol: item.symbol,
-          price: item.mark_price,
-          close: item.close
-        }))
-    );
-
-    if (status) {
-      status.textContent =
-        "Delta public API connected · " +
-        result.result.length +
-        " tickers received";
-    }
-  } catch (error) {
-    console.error("Delta market data error:", error);
-
-    if (status) {
-      status.textContent = "Delta API test failed · Check console";
-    }
-  }
-}
-
-testDeltaMarketData();
