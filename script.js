@@ -397,7 +397,9 @@ async function loadChart(symbol) {
       );
 
     console.log("Delta candles:", symbol, candles.length, candles.slice(-3));
-
+    alert("Symbol: " + symbol + "\nCandles: " + candles.length);
+    alert(JSON.stringify(candles.slice(-2), null, 2));
+   
     if (candles.length < 2) {
       setStatus(
         symbol + " · Not enough historical candles returned"
