@@ -239,7 +239,12 @@ function createChart() {
 
     rightPriceScale: {
       borderColor: "#303a33",
-      autoScale: true
+      autoScale: true,
+      scaleMargins: {
+        top: 0.12,
+        bottom: 0.12
+      },
+      mode: 0
     },
 
     timeScale: {
@@ -397,9 +402,7 @@ async function loadChart(symbol) {
       );
 
     console.log("Delta candles:", symbol, candles.length, candles.slice(-3));
-    alert("Symbol: " + symbol + "\nCandles: " + candles.length);
-    alert(JSON.stringify(candles.slice(-2), null, 2));
-   
+
     if (candles.length < 2) {
       setStatus(
         symbol + " · Not enough historical candles returned"
