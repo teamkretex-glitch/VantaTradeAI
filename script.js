@@ -33,6 +33,85 @@ function setChange(id, value) {
   element.classList.toggle("negative", value < 0);
 }
 
+let marketSocket = null;
+
+function connectLivePrices() {
+  if (marketSocket) {
+    marketSocket.close();
+  }
+
+  const streams = [
+    "btcusdt@ticker",
+    "ethusdt@ticker",
+    "solusdt@ticker"
+  ].join("/");
+
+  marketSocket = new WebSocket(
+    "wss://stream.binance.com:9443/stream?streams=" + streams
+  );
+
+  marketSocket.onmessage = (event) => {
+    try {
+      const message = JSON.parse(event.data);
+      const data = message.data;
+
+      const config = {
+        BTCUSDT: {
+          price: "btcPrice",
+          change: "btcChange",
+          watchPrice: "watchBtcPrice",
+          watchChange: "watchBtcChange"
+        },
+        ETHUSDT: {
+          price: "ethPrice",
+          change: "ethChange",
+          watchPrice: "watchEthPrice",
+          watchChange: "watchEthChange"
+        },
+        SOLUSDT: {
+          price: "solPrice",
+          change: "solChange",
+          watchPrice: "watchSolPrice",
+          watchChange: "watchSolChange"
+        }
+      };
+
+      const item = config[data.s];
+      if (!item) return;
+
+      const price = Number(data.c);
+      const change = Number(data.P);
+
+      if ($(item.price)) {
+        $(item.price).textContent = formatPrice(price);
+      }
+
+      if ($(item.watchPrice)) {
+        $(item.watchPrice).textContent = formatPrice(price);
+      }
+
+      if ($(item.change)) {
+        $(item.change).textContent =
+          formatPercent(change) + " · 24H";
+        $(item.change).classList.toggle("positive", change > 0);
+        $(item.change).classList.toggle("negative", change < 0);
+      }
+
+      setChange(item.watchChange, change);
+    } catch (error) {
+      console.error("Live price update failed:", error);
+    }
+  };
+
+  marketSocket.onclose = () => {
+    setTimeout(connectLivePrices, 5000);
+  };
+
+  marketSocket.onerror = () => {
+    marketSocket.close();
+  };
+}
+
 async function fetchMarkets() {
   try {
     const response = await fetch(
@@ -293,6 +372,7 @@ function initApp() {
   }
 
   fetchMarkets();
+  connectLivePrices();
   loadChart("BTCUSDT");
 
   window.setInterval(fetchMarkets, 30000);
