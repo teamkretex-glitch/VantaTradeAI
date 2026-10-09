@@ -434,3 +434,53 @@ if (document.readyState === "loading") {
 } else {
   initApp();
 }
+
+
+async function testDeltaMarketData() {
+  const status = document.getElementById("chartStatus");
+
+  try {
+    const response = await fetch(
+      "https://api.india.delta.exchange/v2/tickers"
+    );
+
+    if (!response.ok) {
+      throw new Error("HTTP " + response.status);
+    }
+
+    const result = await response.json();
+
+    if (!result.success || !Array.isArray(result.result)) {
+      throw new Error("Unexpected API response");
+    }
+
+    console.log("Delta API connected:", result.result.length, "tickers");
+    console.log(
+      "Available symbols:",
+      result.result
+        .filter(item =>
+          ["BTCUSD", "ETHUSD", "SOLUSD", "XAUTUSD"].includes(item.symbol)
+        )
+        .map(item => ({
+          symbol: item.symbol,
+          price: item.mark_price,
+          close: item.close
+        }))
+    );
+
+    if (status) {
+      status.textContent =
+        "Delta public API connected · " +
+        result.result.length +
+        " tickers received";
+    }
+  } catch (error) {
+    console.error("Delta market data error:", error);
+
+    if (status) {
+      status.textContent = "Delta API test failed · Check console";
+    }
+  }
+}
+
+testDeltaMarketData();
