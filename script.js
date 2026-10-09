@@ -253,10 +253,61 @@ function createChartIfNeeded() {
   }
 }
 
+let chartSocket = null;
+
+function connectLiveChart(symbol) {
+  if (chartSocket) {
+    chartSocket.close();
+    chartSocket = null;
+  }
+
+  chartSocket = new WebSocket(
+    "wss://stream.binance.com:9443/ws/" +
+    symbol.toLowerCase() +
+    "@kline_1h"
+  );
+
+  chartSocket.onmessage = (event) => {
+    try {
+      const message = JSON.parse(event.data);
+      const k = message.k;
+
+      if (!k || !candleSeries || symbol !== currentSymbol) {
+        return;
+      }
+
+      candleSeries.update({
+        time: Math.floor(k.t / 1000),
+        open: Number(k.o),
+        high: Number(k.h),
+        low: Number(k.l),
+        close: Number(k.c)
+      });
+
+      const status = $("chartStatus");
+
+      if (status && !status.dataset.chartError) {
+        status.textContent =
+          symbol.replace("USDT", "") +
+          "/USDT · Live candle · Latest price: " +
+          formatPrice(Number(k.c));
+      }
+    } catch (error) {
+      console.error("Live chart update failed:", error);
+    }
+  };
+
+  chartSocket.onerror = () => {
+    console.error("Live chart WebSocket error");
+  };
+}
+
 async function loadChart(symbol) {
   currentSymbol = symbol;
   const requestId = ++chartRequestId;
-
+  
+  connectLiveChart(symbol);
+  
   const title = $("chartTitle");
   const status = $("chartStatus");
 
