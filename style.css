@@ -1184,3 +1184,34 @@ span {
     transition-duration: 0.01ms !important;
   }
 }
+
+.timeframe-bar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 12px 0;
+}
+
+.timeframe-btn {
+  background: #151b2b;
+  color: #b8c5d9;
+  border: 1px solid #29344a;
+  border-radius: 7px;
+  padding: 9px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.timeframe-btn:hover {
+  background: #202c42;
+  color: #ffffff;
+}
+
+.timeframe-btn.active {
+  background: #1769ff;
+  border-color: #3984ff;
+  color: #ffffff;
+  box-shadow: 0 0 12px #1769ff55;
+}
