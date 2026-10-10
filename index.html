@@ -3,12 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>KreTeX AI · Intelligent Digital Market Dashboard</title>
-
-  <!-- Apni existing CSS file ka naam yahan rakho (agar alag hai to badal do) -->
+  <meta name="theme-color" content="#0b0a0f">
+  <title>KreTeX AI | Market Dashboard</title>
   <link rel="stylesheet" href="./style.css">
 
-  <!-- Chart sizing fix: ye rules chart ko flat/squash hone se bachate hain -->
   <style>
     .dashboard > .panel { min-width: 0; }
     .chart-wrap {
@@ -26,33 +24,38 @@
 </head>
 <body>
   <div class="container">
-    <header>
-      <div class="brand">
+
+    <header class="topbar">
+      <a class="brand" href="./">
         <div class="brand-mark">K</div>
         <div>
           <p class="brand-name">KreTeX <span>AI</span></p>
-          <div class="tagline">Intelligent Digital Market Dashboard</div>
+          <div class="tagline">INTELLIGENT MARKET PLATFORM</div>
         </div>
-      </div>
+      </a>
 
       <div class="live-badge">
         <span class="live-dot"></span>
-        <span>MARKET MONITOR</span>
+        MARKET MONITOR
       </div>
     </header>
 
     <section class="hero">
-      <div class="eyebrow">AI-powered market intelligence</div>
-      <h1>Markets, made clearer.</h1>
-      <p>
-        Track digital asset prices, explore historical candles and monitor
-        market movements from one responsive dashboard.
-      </p>
+      <div class="eyebrow">YOUR MARKET. YOUR EDGE.</div>
+      <h1>See the market<br><span>with clarity.</span></h1>
+      <p>Monitor digital assets, explore price movements and follow market data in one clean workspace.</p>
+      <div class="hero-meta">
+        <span class="hero-line"></span>
+        <span>REAL-TIME MARKET DATA</span>
+      </div>
     </section>
 
     <div class="section-heading">
-      <h2>Market Overview</h2>
-      <span class="muted">USD markets · 24 hour change</span>
+      <div>
+        <span class="section-kicker">THE BIG PICTURE</span>
+        <h2>Market Overview</h2>
+      </div>
+      <span class="muted">USD · 24 hour change</span>
     </div>
 
     <section class="metrics">
@@ -81,19 +84,27 @@
       </article>
     </section>
 
+    <div class="section-heading workspace-heading">
+      <div>
+        <span class="section-kicker">EXPLORE PRICE ACTION</span>
+        <h2>Market Workspace</h2>
+      </div>
+      <span class="muted">Delta Exchange India</span>
+    </div>
+
     <section class="dashboard">
-      <article class="panel">
+      <article class="panel chart-panel">
         <div class="panel-header">
           <div>
+            <div class="symbol-label">SELECTED MARKET</div>
             <h2 id="chartTitle">BTC / USD</h2>
-            <div class="symbol-label">DELTA EXCHANGE INDIA</div>
           </div>
 
           <div class="coin-tabs" id="chartTabs">
-            <button class="tab active" data-symbol="BTCUSD">BTC ₿</button>
-            <button class="tab" data-symbol="ETHUSD">ETH Ξ</button>
-            <button class="tab" data-symbol="SOLUSD">SOL ◎</button>
-            <button class="tab" data-symbol="XAUTUSD">XAUT Au</button>
+            <button class="tab active" data-symbol="BTCUSD">BTC</button>
+            <button class="tab" data-symbol="ETHUSD">ETH</button>
+            <button class="tab" data-symbol="SOLUSD">SOL</button>
+            <button class="tab" data-symbol="XAUTUSD">XAUT</button>
           </div>
         </div>
 
@@ -121,15 +132,17 @@
         </div>
 
         <p class="chart-note">
-          Historical candles and live updates depend on Delta Exchange India
-          API availability. Chart zoom: pinch on mobile or use the price/time
-          scales. Live data is not a guarantee of trade execution prices.
+          Historical candles and live updates depend on Delta Exchange India API availability.
+          Market data is informational and may differ from trade execution prices.
         </p>
       </article>
 
-      <aside class="panel">
+      <aside class="panel watch-panel">
         <div class="panel-header">
-          <h2>Market Watchlist</h2>
+          <div>
+            <div class="symbol-label">YOUR MARKET RADAR</div>
+            <h2>Market Watchlist</h2>
+          </div>
           <span class="muted">24H</span>
         </div>
 
@@ -175,26 +188,50 @@
           <span id="watchXautChange">--</span>
         </div>
 
-        <p class="panel-footnote">
-          Delta Exchange India public market API.
-          A market may be unavailable if the exchange does not list that symbol.
-        </p>
+        <div class="watch-footer">
+          <span class="live-dot"></span>
+          Prices update when market data is available.
+        </div>
       </aside>
     </section>
 
-    <div class="section-heading">
-      <h2>Market Intelligence</h2>
+    <div class="section-heading intelligence-heading">
+      <div>
+        <span class="section-kicker">TOOLS & INSIGHTS</span>
+        <h2>Market Intelligence</h2>
+      </div>
       <span class="muted">Dashboard tools</span>
     </div>
 
     <section class="info-grid">
       <article class="info-card">
+        <span class="info-number">01</span>
+        <div class="info-symbol">◉</div>
         <h3>Live Market Monitoring</h3>
         <p>Track available market prices and daily changes as public data arrives.</p>
+        <span class="info-tag">MARKET DATA</span>
       </article>
-      
-  <!-- Lightweight Charts v4 API is compatible with addCandlestickSeries(). -->
+
+      <article class="info-card">
+        <span class="info-number">02</span>
+        <div class="info-symbol">⌁</div>
+        <h3>Price Chart Analysis</h3>
+        <p>Explore historical candles and review price movements across selected assets.</p>
+        <span class="info-tag">CHART TOOLS</span>
+      </article>
+
+      <article class="info-card">
+        <span class="info-number">03</span>
+        <div class="info-symbol">◇</div>
+        <h3>Risk-Aware Research</h3>
+        <p>Use market information as a research aid, not as a guarantee of future returns.</p>
+        <span class="info-tag">RESEARCH</span>
+      </article>
+    </section>
+
+  </div>
+
   <script src="https://unpkg.com/lightweight-charts@4.2.2/dist/lightweight-charts.standalone.production.js"></script>
   <script src="./script.js"></script>
 </body>
-  </html>
+</html>
