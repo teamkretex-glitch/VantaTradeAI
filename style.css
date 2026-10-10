@@ -860,3 +860,327 @@ a {
     grid-template-columns: minmax(0, 1.2fr) minmax(65px, 1fr) 48px;
   }
 }
+
+/* =========================================
+   KreTeX AI — Mobile Premium Polish
+   Existing HTML IDs and chart untouched
+========================================= */
+
+:root {
+  --kt-bg: #09090d;
+  --kt-card: #121119;
+  --kt-card-2: #171420;
+  --kt-border: rgba(190, 150, 255, 0.16);
+  --kt-purple: #a879ff;
+  --kt-gold: #e9c779;
+  --kt-text: #f7f3ff;
+  --kt-muted: #a5a0b3;
+}
+
+/* Better sizing on all devices */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  width: 100%;
+  overflow-x: clip;
+  scroll-behavior: smooth;
+}
+
+body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
+  background: var(--kt-bg);
+  color: var(--kt-text);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+button,
+a,
+input,
+select {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+a {
+  touch-action: manipulation;
+}
+
+/* Keep all sections inside the screen */
+header,
+main,
+section,
+footer {
+  min-width: 0;
+  max-width: 100%;
+}
+
+img,
+svg,
+canvas {
+  max-width: 100%;
+}
+
+/* Premium card treatment */
+.metric-card,
+.market-card,
+.watchlist,
+.chart-card,
+.info-card,
+.stat-card {
+  border: 1px solid var(--kt-border);
+  border-radius: 16px;
+  background:
+    linear-gradient(
+      145deg,
+      rgba(168, 121, 255, 0.055),
+      transparent 58%
+    ),
+    var(--kt-card);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.16);
+}
+
+/* Subtle gold accent */
+.gold,
+.highlight,
+.price-highlight {
+  color: var(--kt-gold);
+}
+
+/* Prevent long text from breaking layouts */
+h1,
+h2,
+h3,
+p,
+span {
+  overflow-wrap: anywhere;
+}
+
+/* Keep the chart height stable */
+.chart-wrap {
+  position: relative;
+  width: 100%;
+  height: 420px;
+  min-height: 300px;
+  overflow: hidden;
+}
+
+#chart {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+}
+
+/* Tablet and smaller laptops */
+@media (max-width: 900px) {
+  main {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .workspace {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+  }
+
+  .info-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+}
+
+/* Phones */
+@media (max-width: 600px) {
+  body {
+    font-size: 14px;
+    line-height: 1.55;
+  }
+
+  header {
+    padding: 14px 16px;
+  }
+
+  main {
+    padding: 18px 14px 30px;
+  }
+
+  section {
+    margin-bottom: 24px;
+  }
+
+  h1 {
+    font-size: clamp(30px, 8vw, 42px);
+    line-height: 1.12;
+    letter-spacing: -1.2px;
+  }
+
+  h2 {
+    font-size: 22px;
+    line-height: 1.25;
+    letter-spacing: -0.4px;
+  }
+
+  h3 {
+    font-size: 16px;
+  }
+
+  p {
+    line-height: 1.65;
+  }
+
+  /* Overview metrics: two columns */
+  .metrics-grid,
+  .market-overview-grid,
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .metric-card,
+  .market-card,
+  .stat-card {
+    min-width: 0;
+    padding: 13px;
+    border-radius: 14px;
+  }
+
+  /* Workspace stacks instead of squeezing chart */
+  .workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+    align-items: start;
+  }
+
+  .chart-card,
+  .watchlist,
+  .info-card {
+    min-width: 0;
+    width: 100%;
+    border-radius: 15px;
+  }
+
+  .chart-wrap {
+    height: 340px;
+    min-height: 300px;
+  }
+
+  #chart {
+    height: 100%;
+    min-height: 300px;
+  }
+
+  /* Intelligence cards */
+  .info-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  /* Comfortable touch targets */
+  button,
+  .market-tab,
+  .tab,
+  .watchlist-item {
+    min-height: 42px;
+  }
+
+  button {
+    padding: 10px 14px;
+  }
+
+  /* Keep tabs usable on narrow screens */
+  .market-tabs,
+  .chart-tabs,
+  .tabs {
+    display: flex;
+    gap: 8px;
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: thin;
+    padding-bottom: 5px;
+  }
+
+  .market-tabs > *,
+  .chart-tabs > *,
+  .tabs > * {
+    flex: 0 0 auto;
+  }
+
+  /* Tables should scroll, not stretch the page */
+  .table-wrap,
+  .watchlist-table-wrap {
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Better spacing around the hero */
+  .hero {
+    padding-top: 22px;
+    padding-bottom: 24px;
+  }
+
+  .hero p {
+    max-width: 38ch;
+  }
+
+  /* Buttons don't overflow the viewport */
+  .hero-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .hero-buttons a,
+  .hero-buttons button {
+    max-width: 100%;
+  }
+}
+
+/* Small phones */
+@media (max-width: 380px) {
+  main {
+    padding-left: 11px;
+    padding-right: 11px;
+  }
+
+  .metrics-grid,
+  .market-overview-grid,
+  .stats-grid {
+    gap: 8px;
+  }
+
+  .metric-card,
+  .market-card,
+  .stat-card {
+    padding: 10px;
+  }
+
+  .chart-wrap {
+    height: 310px;
+    min-height: 290px;
+  }
+
+  h1 {
+    font-size: 29px;
+  }
+}
+
+/* Respect reduced-motion preference */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
