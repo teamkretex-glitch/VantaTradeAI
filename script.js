@@ -14,13 +14,18 @@ let RESOLUTION_SEC = 3600;
 let WS_CHANNEL = "candlestick_" + RESOLUTION;
 let HISTORY_DAYS = 14;
 
+
 const TIMEFRAME_CONFIG = {
-  "1m":  { seconds: 60,    days: 2 },
-  "5m":  { seconds: 300,   days: 5 },
-  "15m": { seconds: 900,   days: 14 },
-  "1h":  { seconds: 3600,  days: 14 },
-  "4h":  { seconds: 14400, days: 60 },
-  "1d":  { seconds: 86400, days: 365 }
+  "5s":   { seconds: 5,     days: 1 },
+  "15s":  { seconds: 15,    days: 1 },
+  "30s":  { seconds: 30,    days: 1 },
+  "1m":   { seconds: 60,    days: 2 },
+  "5m":   { seconds: 300,   days: 5 },
+  "15m":  { seconds: 900,   days: 14 },
+  "30m":  { seconds: 1800,  days: 14 },
+  "1h":   { seconds: 3600,  days: 14 },
+  "4h":   { seconds: 14400, days: 60 },
+  "1d":   { seconds: 86400, days: 365 }
 };
 
 const TICKER_REFRESH_MS = 5000;
