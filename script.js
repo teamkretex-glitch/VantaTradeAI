@@ -693,22 +693,42 @@ function initApp() {
       }
     });
   });
-  document.querySelectorAll("[data-timeframe]").forEach((button) => {
-   button.addEventListener("click", () => {
-    const timeframe = button.dataset.timeframe;
-    const config = TIMEFRAME_CONFIG[timeframe];
+  
+const timeframeToggle = document.getElementById("timeframeToggle");
+const timeframeMenu = document.getElementById("timeframeMenu");
+const selectedTimeframe = document.getElementById("selectedTimeframe");
 
-    if (!config) return;
+if (timeframeToggle && timeframeMenu) {
+  timeframeToggle.addEventListener("click", () => {
+    timeframeMenu.hidden = !timeframeMenu.hidden;
+  });
 
-    RESOLUTION = timeframe;
-    RESOLUTION_SEC = config.seconds;
-    HISTORY_DAYS = config.days;
-    WS_CHANNEL = "candlestick_" + RESOLUTION;
+  document.querySelectorAll(".timeframe-option").forEach((button) => {
+    button.addEventListener("click", () => {
+      const timeframe = button.dataset.timeframe;
+      const config = TIMEFRAME_CONFIG[timeframe];
 
-    document.querySelectorAll("[data-timeframe]").forEach((btn) => {
-      btn.classList.toggle("active", btn === button);
+      if (!config) return;
+
+      RESOLUTION = timeframe;
+      RESOLUTION_SEC = config.seconds;
+      HISTORY_DAYS = config.days;
+      WS_CHANNEL = "candlestick_" + RESOLUTION;
+
+      selectedTimeframe.textContent = button.textContent.trim();
+      timeframeMenu.hidden = true;
+
+      loadChart(currentSymbol);
     });
+  });
 
+  document.addEventListener("click", (event) => {
+    if (!event.target.closest(".timeframe-dropdown")) {
+      timeframeMenu.hidden = true;
+    }
+  });
+}
+   
     loadChart(currentSymbol);
   });
 });
