@@ -186,6 +186,8 @@ async function fetchMarkets() {
     if (!response.ok) throw new Error("Ticker HTTP " + response.status);
 
     const data = await response.json();
+    
+    console.log("Ticker API response:", data);
 
     if (!data.success || !Array.isArray(data.result)) {
       throw new Error("Unexpected ticker response");
