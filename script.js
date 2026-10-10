@@ -404,7 +404,6 @@ async function fetchCandles(symbol, startSec, endSec) {
   if (!response.ok) throw new Error("Candles HTTP " + response.status);
 
   const data = await response.json();
-  console.log("TIMEFRAME API:", RESOLUTION, data);
    
   if (!data.success || !Array.isArray(data.result)) {
     throw new Error("Unexpected candle response");
