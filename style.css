@@ -1224,3 +1224,77 @@ span {
   color: #ffffff;
   box-shadow: 0 2px 8px #7651b544;
 }
+
+
+.timeframe-dropdown {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+  max-width: 140px;
+  margin: 12px 0;
+}
+
+.timeframe-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 14px;
+  background: #171b25;
+  color: #ffffff;
+  border: 1px solid #30394b;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.timeframe-arrow {
+  color: #aeb8ca;
+  margin-left: 10px;
+}
+
+.timeframe-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 9999;
+  width: 180px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 6px;
+  background: #171b25;
+  border: 1px solid #30394b;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px #0008;
+}
+
+.timeframe-menu[hidden] {
+  display: none !important;
+}
+
+.timeframe-group {
+  padding: 9px 10px 5px;
+  color: #8290a8;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.timeframe-option {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  text-align: left;
+  background: transparent;
+  color: #c8d2e2;
+  border: 0;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.timeframe-option:hover {
+  background: #7651b5;
+  color: #ffffff;
+}
