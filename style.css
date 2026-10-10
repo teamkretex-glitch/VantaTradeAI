@@ -1485,3 +1485,236 @@ button:focus-visible {
     grid-template-columns: minmax(0, 1.15fr) minmax(62px, 0.9fr) 48px;
   }
 }
+
+
+/* ===== KreTeX AI — Premium Professional Theme ===== */
+
+:root {
+  --bg: #0b0a0f;
+  --panel: #14121b;
+  --panel-2: #1b1824;
+  --border: #30283b;
+  --text: #f5f1fa;
+  --muted: #a49bad;
+  --accent: #a78bfa;
+  --accent-2: #c4b5fd;
+  --gold: #d6b875;
+  --green: #42c99a;
+  --red: #f07886;
+}
+
+html {
+  background: var(--bg);
+  color-scheme: dark;
+}
+
+body {
+  background:
+    radial-gradient(ellipse at 50% 0%, #251832 0%, transparent 42%),
+    var(--bg) !important;
+  color: var(--text) !important;
+  font-family: Inter, system-ui, -apple-system, sans-serif;
+}
+
+.container {
+  max-width: 1440px;
+  margin-inline: auto;
+  padding: 24px;
+}
+
+header {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 20px;
+  margin-bottom: 28px;
+}
+
+.brand,
+.brand h1 {
+  color: var(--text) !important;
+  letter-spacing: -0.5px;
+}
+
+.brand h1 {
+  font-weight: 800;
+}
+
+.hero {
+  background: linear-gradient(135deg, #1d1728, #121019 75%);
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  padding: 30px;
+  box-shadow: 0 12px 40px #00000030;
+}
+
+.hero h1,
+.hero h2,
+.section-heading {
+  color: var(--text) !important;
+  letter-spacing: -0.6px;
+}
+
+button,
+.btn,
+.tab {
+  transition: background .2s ease, border-color .2s ease,
+              transform .2s ease;
+}
+
+button,
+.btn {
+  border-radius: 10px;
+}
+
+button:hover,
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+.metrics,
+.metric-card,
+.panel,
+.dashboard > .panel {
+  min-width: 0;
+}
+
+.metric-card,
+.panel {
+  background: linear-gradient(145deg, #191621, #121019) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 17px !important;
+  box-shadow: 0 8px 25px #00000020;
+}
+
+.metric-card {
+  padding: 18px;
+}
+
+.panel {
+  padding: 20px;
+}
+
+.panel-header {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 14px;
+  margin-bottom: 16px;
+}
+
+.panel h2,
+.panel h3,
+.metric-card h2,
+.metric-card h3 {
+  color: var(--text) !important;
+}
+
+p,
+.summary-label,
+.chart-note,
+.muted {
+  color: var(--muted);
+}
+
+.tab {
+  background: #1c1825 !important;
+  color: #c4bbd0 !important;
+  border: 1px solid #332b40 !important;
+}
+
+.tab.active,
+.tab[aria-selected="true"] {
+  background: #342347 !important;
+  color: #e7dcff !important;
+  border-color: var(--accent) !important;
+}
+
+.chart-summary {
+  gap: 22px;
+}
+
+.summary-value {
+  color: var(--text) !important;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+#chartLivePrice {
+  color: var(--gold) !important;
+}
+
+.chart-status {
+  color: var(--accent-2);
+}
+
+.watch-row {
+  border-bottom: 1px solid #292331;
+  padding-block: 12px;
+}
+
+.watch-row:last-child {
+  border-bottom: 0;
+}
+
+.asset-name {
+  color: var(--text) !important;
+  font-weight: 600;
+}
+
+#watchBtcChange,
+#watchEthChange,
+#watchSolChange,
+#watchXautChange {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+input,
+select,
+textarea {
+  background: #100e16 !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 10px;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: 1px solid var(--accent) !important;
+  border-color: var(--accent) !important;
+}
+
+a {
+  color: var(--accent-2);
+}
+
+hr {
+  border-color: var(--border);
+}
+
+@media (max-width: 700px) {
+  .container {
+    padding: 14px;
+  }
+
+  header {
+    margin-bottom: 18px;
+  }
+
+  .hero {
+    padding: 20px;
+    border-radius: 16px;
+  }
+
+  .metric-card,
+  .panel {
+    padding: 14px;
+    border-radius: 14px !important;
+  }
+
+  .chart-summary {
+    gap: 12px;
+  }
+
+  .summary-value {
+    font-size: 14px;
+  }
+}
