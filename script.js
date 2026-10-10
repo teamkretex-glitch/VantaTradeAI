@@ -9,10 +9,19 @@
 const DELTA_API = "https://api.india.delta.exchange";
 const DELTA_WS = "wss://public-socket.india.delta.exchange";
 
-const RESOLUTION = "1h";
-const RESOLUTION_SEC = 3600;
-const WS_CHANNEL = "candlestick_" + RESOLUTION;
-const HISTORY_DAYS = 14;
+let RESOLUTION = "1h";
+let RESOLUTION_SEC = 3600;
+let WS_CHANNEL = "candlestick_" + RESOLUTION;
+let HISTORY_DAYS = 14;
+
+const TIMEFRAME_CONFIG = {
+  "1m":  { seconds: 60,    days: 2 },
+  "5m":  { seconds: 300,   days: 5 },
+  "15m": { seconds: 900,   days: 14 },
+  "1h":  { seconds: 3600,  days: 14 },
+  "4h":  { seconds: 14400, days: 60 },
+  "1d":  { seconds: 86400, days: 365 }
+};
 
 const TICKER_REFRESH_MS = 5000;
 const FALLBACK_POLL_MS = 10000;
@@ -684,6 +693,25 @@ function initApp() {
       }
     });
   });
+  document.querySelectorAll("[data-timeframe]").forEach((button) => {
+   button.addEventListener("click", () => {
+    const timeframe = button.dataset.timeframe;
+    const config = TIMEFRAME_CONFIG[timeframe];
+
+    if (!config) return;
+
+    RESOLUTION = timeframe;
+    RESOLUTION_SEC = config.seconds;
+    HISTORY_DAYS = config.days;
+    WS_CHANNEL = "candlestick_" + RESOLUTION;
+
+    document.querySelectorAll("[data-timeframe]").forEach((btn) => {
+      btn.classList.toggle("active", btn === button);
+    });
+
+    loadChart(currentSymbol);
+  });
+});
 
   loadChart("BTCUSD");
 }
