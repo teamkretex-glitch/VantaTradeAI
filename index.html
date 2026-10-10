@@ -127,16 +127,33 @@
           Connecting to Delta Exchange India...
         </div>
 
-        
-<div class="timeframe-bar">
-  <button class="timeframe-btn" data-timeframe="1m">1m</button>
-  <button class="timeframe-btn" data-timeframe="5m">5m</button>
-  <button class="timeframe-btn" data-timeframe="15m">15m</button>
-  <button class="timeframe-btn active" data-timeframe="1h">1H</button>
-  <button class="timeframe-btn" data-timeframe="4h">4H</button>
-  <button class="timeframe-btn" data-timeframe="1d">1D</button>
-</div>
+  <div class="timeframe-dropdown">
+  <button id="timeframeToggle" class="timeframe-toggle" type="button">
+    <span id="selectedTimeframe">1H</span>
+    <span class="timeframe-arrow">▾</span>
+  </button>
 
+  <div id="timeframeMenu" class="timeframe-menu" hidden>
+    <div class="timeframe-group">SECONDS</div>
+    <button class="timeframe-option" data-timeframe="5s">5 seconds</button>
+    <button class="timeframe-option" data-timeframe="15s">15 seconds</button>
+    <button class="timeframe-option" data-timeframe="30s">30 seconds</button>
+
+    <div class="timeframe-group">MINUTES</div>
+    <button class="timeframe-option" data-timeframe="1m">1 minute</button>
+    <button class="timeframe-option" data-timeframe="5m">5 minutes</button>
+    <button class="timeframe-option" data-timeframe="15m">15 minutes</button>
+    <button class="timeframe-option" data-timeframe="30m">30 minutes</button>
+
+    <div class="timeframe-group">HOURS</div>
+    <button class="timeframe-option" data-timeframe="1h">1 hour</button>
+    <button class="timeframe-option" data-timeframe="4h">4 hours</button>
+
+    <div class="timeframe-group">DAYS</div>
+    <button class="timeframe-option" data-timeframe="1d">1 day</button>
+  </div>
+</div>
+        
 <div class="chart-wrap">
   <div id="chart"></div>
 </div>
