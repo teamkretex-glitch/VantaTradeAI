@@ -16,9 +16,6 @@ let HISTORY_DAYS = 14;
 
 
 const TIMEFRAME_CONFIG = {
-  "5s":   { seconds: 5,     days: 1 },
-  "15s":  { seconds: 15,    days: 1 },
-  "30s":  { seconds: 30,    days: 1 },
   "1m":   { seconds: 60,    days: 2 },
   "5m":   { seconds: 300,   days: 5 },
   "15m":  { seconds: 900,   days: 14 },
