@@ -728,11 +728,6 @@ if (timeframeToggle && timeframeMenu) {
     }
   });
 }
-   
-    loadChart(currentSymbol);
-  });
-});
-
   loadChart("BTCUSD");
 }
 
