@@ -1184,34 +1184,48 @@ span {
     transition-duration: 0.01ms !important;
   }
 }
-
 .timeframe-bar {
   display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 2px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 4px;
   margin: 12px 0;
+  background: #171b25;
+  border: 1px solid #293044;
+  border-radius: 10px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.timeframe-bar::-webkit-scrollbar {
+  display: none;
 }
 
 .timeframe-btn {
-  background: #151b2b;
-  color: #b8c5d9;
-  border: 1px solid #29344a;
+  flex: 1 0 0;
+  min-width: 0;
+  white-space: nowrap;
+  background: transparent;
+  color: #aeb8ca;
+  border: 0;
   border-radius: 7px;
-  padding: 9px 14px;
+  padding: 10px 4px;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: 0.2s ease;
+  transition: background 0.2s, color 0.2s;
 }
 
 .timeframe-btn:hover {
-  background: #202c42;
   color: #ffffff;
+  background: #252b3a;
 }
 
 .timeframe-btn.active {
-  background: #1769ff;
-  border-color: #3984ff;
+  background: #7651b5;
   color: #ffffff;
-  box-shadow: 0 0 12px #1769ff55;
+  box-shadow: 0 2px 8px #7651b544;
 }
